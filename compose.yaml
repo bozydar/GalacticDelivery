@@ -1,0 +1,7 @@
+﻿services:
+  galacticdelivery.api.web:
+    image: galacticdelivery.api.web
+    build:
+      context: .
+      dockerfile: GalacticDelivery.Api.Web/Dockerfile
+
