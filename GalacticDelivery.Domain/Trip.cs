@@ -8,7 +8,7 @@ public class Trip
     public Guid CarId { get; init; }
 }
 
-public interface ITripRepository
+public interface ITripRepository    
 {
     public Task<Trip> Create(Trip driver);
     public Task<Trip> Fetch(Guid tripId);

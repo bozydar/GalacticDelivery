@@ -1,10 +1,6 @@
 namespace GalacticDelivery.Domain;
 
-public class Vehicle
-{
-    public Guid? Id { get; init; }
-    public required string RegNumber  { get; init; }
-}
+public record Vehicle(Guid? Id, string RegNumber);
 
 public interface IVehicleRepository
 {
