@@ -17,4 +17,9 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\GalacticDelivery.Application\GalacticDelivery.Application.csproj" />
+      <ProjectReference Include="..\GalacticDelivery.Domain\GalacticDelivery.Domain.csproj" />
+    </ItemGroup>
+
 </Project>

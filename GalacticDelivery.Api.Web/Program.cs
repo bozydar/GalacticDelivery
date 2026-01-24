@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using GalacticDelivery.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,7 +83,7 @@ app.MapPost("/queue/event", (CreateEvent @event) =>
 app.Run();
 
 
-record Route(Guid Id, string StartPoint, string EndPoint);
+record Route(Guid RouteId, string StartPoint, string EndPoint);
 
 record CreateTrip(Guid RouteId);
 
@@ -91,14 +92,5 @@ record Trip(Guid TripId, Guid RouteId);
 record Vehicle(Guid VehicleId, string RegNumber);
 
 record Driver(Guid DriverId, string FirstName, string LastName);
-
-enum EventType
-{
-    TripStarted,
-    TripCompleted,
-    CheckpointPassed,
-    CustomEvent
-};
-
 
 record CreateEvent(Guid EventId, EventType EventType, string Description);
