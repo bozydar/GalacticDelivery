@@ -1,10 +1,18 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter()
+    );
+});
 
 var app = builder.Build();
 
@@ -64,6 +72,12 @@ app.MapPost("/api/trip", (CreateTrip trip) =>
     })
     .WithName("CreateTrip");
 
+app.MapPost("/queue/event", (CreateEvent @event) =>
+{
+    Console.WriteLine(@event);
+    return Results.Ok();
+}).WithName("CreateEvent");
+
 
 app.Run();
 
@@ -77,3 +91,14 @@ record Trip(Guid TripId, Guid RouteId);
 record Vehicle(Guid VehicleId, string RegNumber);
 
 record Driver(Guid DriverId, string FirstName, string LastName);
+
+enum EventType
+{
+    TripStarted,
+    TripCompleted,
+    CheckpointPassed,
+    CustomEvent
+};
+
+
+record CreateEvent(Guid EventId, EventType EventType, string Description);
