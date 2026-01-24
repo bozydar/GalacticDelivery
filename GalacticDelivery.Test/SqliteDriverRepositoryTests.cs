@@ -1,4 +1,6 @@
-﻿namespace GalacticDelivery.Test;
+﻿using GalacticDelivery.Domain;
+
+namespace GalacticDelivery.Test;
 
 using System;
 using System.Threading.Tasks;
@@ -11,7 +13,7 @@ using Xunit;
 public sealed class SqliteDriverRepositoryTests : IDisposable
 {
     private readonly SqliteConnection _connection;
-    private readonly SqliteDriverRepository _repository;
+    private readonly SqliteDriverRepository _repository;    
 
     public SqliteDriverRepositoryTests()
     {
@@ -110,7 +112,6 @@ public sealed class SqliteDriverRepositoryTests : IDisposable
         Assert.Equal(freeDriver.Id, ids.First());
         Assert.Single(ids);
     }
-
 
     public void Dispose()
     {
