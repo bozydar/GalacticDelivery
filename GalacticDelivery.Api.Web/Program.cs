@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -14,28 +16,64 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+app.MapGet("/api/vehicles", () =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    List<Vehicle> result =
+    [
+        new(Guid.NewGuid(), "ABC 1111"),
+        new(Guid.NewGuid(), "DEF 222"),
+        new(Guid.NewGuid(), "GHI 333"),
+    ];
+    return result;
+}).WithName("GetVehicles");
 
-    app.MapGet("/weatherforecast", () =>
+app.MapGet("/api/drivers", () =>
+{
+    List<Driver> result =
+    [
+        new(Guid.NewGuid(), "Adam", "Adamski"),
+        new(Guid.NewGuid(), "Bob", "Builder"),
+        new(Guid.NewGuid(), "Cecylia", "Cyckowska"),
+    ];
+    return result;
+}).WithName("GetDrivers");
+
+app.MapGet("/api/routes", () =>
+{
+    List<Route> result =
+    [
+        new(Guid.NewGuid(), "Auckland", "Wellington"),
+        new(Guid.NewGuid(), "Wellington", "Gisborne"),
+        new(Guid.NewGuid(), "Gisborne", "Hamilton"),
+        new(Guid.NewGuid(), "Hamilton", "Napier"),
+    ];
+    return result;
+}).WithName("GetRoutes");
+
+app.MapPost("/api/trip", (CreateTrip trip) =>
     {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
+        if (trip.RouteId == Guid.Empty)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                [nameof(CreateTrip.RouteId)] = ["field is required"]
+            }, statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return Results.Ok(new Trip(Guid.NewGuid(), trip.RouteId));
     })
-    .WithName("GetWeatherForecast");
+    .WithName("CreateTrip");
+
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+
+record Route(Guid Id, string StartPoint, string EndPoint);
+
+record CreateTrip(Guid RouteId);
+
+record Trip(Guid TripId, Guid RouteId);
+
+record Vehicle(Guid VehicleId, string RegNumber);
+
+record Driver(Guid DriverId, string FirstName, string LastName);
