@@ -1,19 +1,18 @@
-﻿using GalacticDelivery.Domain;
+﻿using GalacticDelivery.Infrastructure;
+using GalacticDelivery.Domain;
 
-namespace GalacticDelivery.Test;
+namespace GalacticDelivery.Test.Infrastructure;
 
 using System;
 using System.Threading.Tasks;
 using Dapper;
-using Domain;
-using Infrastructure;
 using Microsoft.Data.Sqlite;
 using Xunit;
 
 public sealed class SqliteDriverRepositoryTests : IDisposable
 {
     private readonly SqliteConnection _connection;
-    private readonly SqliteDriverRepository _repository;    
+    private readonly SqliteDriverRepository _repository;
 
     public SqliteDriverRepositoryTests()
     {
@@ -51,6 +50,7 @@ public sealed class SqliteDriverRepositoryTests : IDisposable
                                RouteId TEXT NOT NULL,
                                VehicleId TEXT NOT NULL,
                                DriverId TEXT NOT NULL,
+                               Status TEXT NOT NULL,
                                FOREIGN KEY (RouteId) REFERENCES Routes(Id),
                                FOREIGN KEY (VehicleId) REFERENCES Routes(Id),
                                FOREIGN KEY (DriverId) REFERENCES Routes(Id)
@@ -106,7 +106,7 @@ public sealed class SqliteDriverRepositoryTests : IDisposable
     {
         var freeDriver = await _repository.Create(new Driver(Id: null, FirstName: "Alice", LastName: "Smith"), null);
         await _repository.Create(
-                new Driver(Id: null, FirstName: "Bob", LastName: "Blocked", CurrentTripId: Guid.NewGuid()), null);
+            new Driver(Id: null, FirstName: "Bob", LastName: "Blocked", CurrentTripId: Guid.NewGuid()), null);
 
         var ids = (await _repository.FetchAllFree()).ToList();
         Assert.Equal(freeDriver.Id, ids.First());

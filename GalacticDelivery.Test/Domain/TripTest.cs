@@ -13,7 +13,7 @@ public class TripTests
             id: Guid.NewGuid(),
             routeId: Guid.NewGuid(),
             driverId: Guid.NewGuid(),
-            carId: Guid.NewGuid(),
+            vehicleId: Guid.NewGuid(),
             status: status
         );
     }
@@ -46,7 +46,7 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip.End();
+        trip.Finish();
 
         Assert.Equal(TripStatus.Finished, trip.Status);
     }
@@ -59,7 +59,7 @@ public class TripTests
     {
         var trip = CreateTrip(initialStatus);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => trip.End());
+        var exception = Assert.Throws<InvalidOperationException>(() => trip.Finish());
 
         Assert.Equal("Trip hasn't been progressed.", exception.Message);
     }

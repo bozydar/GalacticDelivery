@@ -9,21 +9,26 @@ public enum TripStatus
     Finished
 }
 
-public class Trip
+public record Trip
 {
     public Guid? Id { get; init; }
     public Guid RouteId { get; init; }
     public Guid DriverId { get; init; }
-    public Guid CarId { get; init; }
+    public Guid VehicleId { get; init; }
     public TripStatus Status { get; private set; }
 
-    public Trip(Guid? id, Guid routeId, Guid driverId, Guid carId, TripStatus status)
+    internal Trip(Guid? id, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status)
     {
         Id = id;
         RouteId = routeId;
         DriverId = driverId;
-        CarId = carId;
+        VehicleId = vehicleId;
         Status = status;
+    }
+    
+    public static Trip Plan(Guid routeId, Guid driverId, Guid vehicleId)
+    {
+        return new Trip(null, routeId, driverId, vehicleId, TripStatus.Planned);
     }
 
     public void Start()
@@ -35,7 +40,7 @@ public class Trip
         Status =  TripStatus.InProgress;
     }
 
-    public void End()
+    public void Finish()
     {
         if (Status != TripStatus.InProgress) 
         {
@@ -47,7 +52,7 @@ public class Trip
 
 public interface ITripRepository    
 {
-    public Task<Trip> Create(Trip driver, DbTransaction? transaction = null);
-    public Task<Trip> Update(Trip driver, DbTransaction? transaction = null);
+    public Task<Trip> Create(Trip trip, DbTransaction? transaction = null);
+    public Task<Trip> Update(Trip trip, DbTransaction? transaction = null);
     public Task<Trip> Fetch(Guid tripId);
 }
