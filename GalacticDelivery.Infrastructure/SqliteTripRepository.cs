@@ -25,10 +25,10 @@ public sealed class SqliteTripRepository : ITripRepository
         var id = Guid.NewGuid();
         await _connection.ExecuteAsync(sql, new
         {
-            Id = id,
-            trip.RouteId,
-            trip.VehicleId,
-            trip.DriverId,
+            Id = id.ToString(),
+            RouteId = trip.RouteId.ToString(),
+            VehicleId = trip.VehicleId.ToString(),
+            DriverId = trip.DriverId.ToString(),
             Status = trip.Status.ToString()
         }, transaction: transaction);
 
@@ -44,18 +44,48 @@ public sealed class SqliteTripRepository : ITripRepository
 
         await _connection.ExecuteAsync(sql, new
         {
-            trip.Id,
-            trip.RouteId,
-            trip.VehicleId,
-            trip.DriverId,
+            Id = trip.Id.ToString(),
+            RouteId = trip.RouteId.ToString(),
+            VehicleId = trip.VehicleId.ToString(),
+            DriverId = trip.DriverId.ToString(),
             Status = trip.Status.ToString()
         }, transaction: transaction);
 
         return trip;
     }
 
-    public Task<Trip> Fetch(Guid tripId)
+    public async Task<Trip> Fetch(Guid tripId)
     {
-        throw new NotImplementedException();
+        const string sql = """
+                               SELECT Id, RouteId, VehicleId, DriverId, Status
+                               FROM Trips
+                               WHERE Id = @Id;
+                           """;
+
+        var row = await _connection.QuerySingleOrDefaultAsync<TripRow>(
+            sql,
+            new { Id = tripId.ToString() }
+        );
+
+        if (row is null)
+        {
+            throw new KeyNotFoundException($"Trip {tripId} not found");
+        }
+
+        return row.ToTrip();
+    }
+
+    private sealed record TripRow(
+        string Id,
+        string RouteId,
+        string VehicleId,
+        string DriverId,
+        string Status)
+    {
+        public Trip ToTrip()
+        {
+            return new Trip(Guid.Parse(Id), Guid.Parse(RouteId), Guid.Parse(DriverId), Guid.Parse(VehicleId),
+                (TripStatus)Enum.Parse(typeof(TripStatus), Status));
+        }
     }
 }

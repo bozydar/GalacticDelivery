@@ -48,7 +48,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
             Id = id.ToString(),
             driver.FirstName,
             driver.LastName,
-            driver.CurrentTripId
+            CurrentTripId = driver.CurrentTripId.ToString()
         }, transaction: tx);
 
         return driver;

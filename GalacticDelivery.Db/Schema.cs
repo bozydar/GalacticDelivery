@@ -30,16 +30,16 @@ public static class Schema
                                      DriverId TEXT NOT NULL,
                                      Status TEXT NOT NULL,
                                      FOREIGN KEY (RouteId) REFERENCES Routes(Id),
-                                     FOREIGN KEY (VehicleId) REFERENCES Routes(Id),
-                                     FOREIGN KEY (DriverId) REFERENCES Routes(Id)
+                                     FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id),
+                                     FOREIGN KEY (DriverId) REFERENCES Drivers(Id)
                                  );
 
                                  CREATE TABLE IF NOT EXISTS Events (
                                      Id TEXT PRIMARY KEY,
                                      CreatedAt DATETIME NOT NULL,
                                      TripId TEXT NOT NULL,
-                                     EventType TEXT NOT NULL,
-                                     Description TEXT NOT NULL,
+                                     Type TEXT NOT NULL,
+                                     Payload TEXT NOT NULL,
                                      FOREIGN KEY (TripId) REFERENCES Trips(Id)
                                  );
 
