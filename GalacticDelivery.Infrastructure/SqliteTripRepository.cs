@@ -86,8 +86,13 @@ public sealed class SqliteTripRepository : ITripRepository
     {
         public Trip ToTrip()
         {
-            return new Trip(Guid.Parse(Id), DateTime.Parse(CreatedAt), Guid.Parse(RouteId), Guid.Parse(DriverId), Guid.Parse(VehicleId),
-                (TripStatus)Enum.Parse(typeof(TripStatus), Status));
+            return new Trip(
+                id: Guid.Parse(Id),
+                createdAt: DateTime.Parse(CreatedAt),
+                routeId: Guid.Parse(RouteId),
+                driverId: Guid.Parse(DriverId),
+                vehicleId: Guid.Parse(VehicleId),
+                status: Enum.Parse<TripStatus>(Status));
         }
     }
 }

@@ -21,14 +21,12 @@ public class TripTests
 
     private static Event CreateEvent(Guid tripId, EventType type, string? payload = null)
     {
-        return new Event
-        {
-            Id = Guid.NewGuid(),
-            TripId = tripId,
-            CreatedAt = DateTime.UtcNow,
-            Type = type,
-            Payload = payload
-        };
+        return new Event(
+            Id: Guid.NewGuid(),
+            TripId: tripId,
+            CreatedAt: DateTime.UtcNow,
+            Type: type,
+            Payload: payload);
     }
 
     [Fact]
@@ -85,7 +83,7 @@ public class TripTests
     public void AddEvent_WhenPlannedThenNotStarted_ShouldThrowInvalidOperationException()
     {
         var trip = CreateTrip(TripStatus.Planned);
-        
+
         var exception = Assert.Throws<InvalidOperationException>(() =>
             trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted)));
 

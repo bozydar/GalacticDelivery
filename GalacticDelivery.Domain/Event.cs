@@ -1,3 +1,5 @@
+using System.Data;
+
 namespace GalacticDelivery.Domain;
 
 public enum EventType
@@ -8,11 +10,15 @@ public enum EventType
     Accident
 }
 
-public class Event
+public record Event(
+    Guid? Id,
+    Guid TripId,
+    DateTime CreatedAt,
+    EventType Type,
+    string? Payload);
+
+public interface IEventRepository
 {
-    public Guid Id { get; init; }
-    public Guid TripId { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public EventType Type { get; init; }
-    public string? Payload { get; init; }
+    public Task<Event> Create(Event @event, IDbTransaction? transaction = null);
+    public Task<IEnumerable<Event>> FetchByTripId(Guid tripId);
 }
