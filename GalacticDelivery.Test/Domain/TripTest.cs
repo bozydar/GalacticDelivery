@@ -18,49 +18,111 @@ public class TripTests
         );
     }
 
+    private static Event CreateEvent(Guid tripId, EventType type, string? payload = null)
+    {
+        return new Event
+        {
+            Id = Guid.NewGuid(),
+            TripId = tripId,
+            CreatedAt = DateTime.UtcNow,
+            Type = type,
+            Payload = payload
+        };
+    }
+
     [Fact]
-    public void Start_WhenStatusIsPlanned_ShouldChangeStatusToInProgress()
+    public void Plan_ShouldInitializePlannedStatusAndEmptyEvents()
+    {
+        var trip = Trip.Plan(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+
+        Assert.Equal(TripStatus.Planned, trip.Status);
+        Assert.Empty(trip.Events);
+    }
+
+    [Fact]
+    public void AddEvent_WhenTripStarted_ShouldSetStatusToInProgress()
     {
         var trip = CreateTrip(TripStatus.Planned);
 
-        trip.Start();
+        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
 
         Assert.Equal(TripStatus.InProgress, trip.Status);
     }
 
-    [Theory]
-    [InlineData(TripStatus.InProgress)]
-    [InlineData(TripStatus.Finished)]
-    public void Start_WhenStatusIsNotPlanned_ShouldThrowInvalidOperationException(
-        TripStatus initialStatus)
-    {
-        var trip = CreateTrip(initialStatus);
-
-        var exception = Assert.Throws<InvalidOperationException>(() => trip.Start());
-
-        Assert.Equal("Trip hasn't been planned.", exception.Message);
-    }
-
     [Fact]
-    public void End_WhenStatusIsInProgress_ShouldChangeStatusToFinished()
+    public void AddEvent_WhenTripCompleted_ShouldSetStatusToFinished()
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip.Finish();
+        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
 
         Assert.Equal(TripStatus.Finished, trip.Status);
     }
 
-    [Theory]
-    [InlineData(TripStatus.Planned)]
-    [InlineData(TripStatus.Finished)]
-    public void End_WhenStatusIsNotInProgress_ShouldThrowInvalidOperationException(
-        TripStatus initialStatus)
+    [Fact]
+    public void AddEvent_WhenNonStatusEvent_ShouldNotChangeStatus()
     {
-        var trip = CreateTrip(initialStatus);
+        var trip = CreateTrip(TripStatus.InProgress);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => trip.Finish());
+        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.CheckpointPassed, "Checkpoint-1"));
 
-        Assert.Equal("Trip hasn't been progressed.", exception.Message);
+        Assert.Equal(TripStatus.InProgress, trip.Status);
+    }
+
+    [Fact]
+    public void AddEvent_WhenStartedThenCompleted_ShouldEndAsFinished()
+    {
+        var trip = CreateTrip(TripStatus.Planned);
+
+        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
+        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+
+        Assert.Equal(TripStatus.Finished, trip.Status);
+    }
+
+    [Fact]
+    public void AddEvent_WhenPlannedThenNotStarted_ShouldThrowInvalidOperationException()
+    {
+        var trip = CreateTrip(TripStatus.Planned);
+        
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted)));
+
+        Assert.Equal($"Wrong event sequence: TripCompleted", exception.Message);
+    }
+
+    [Fact]
+    public void AddEvent_WhenTripIsFinished_ShouldRejectAnotherCompletion()
+    {
+        var trip = CreateTrip(TripStatus.InProgress);
+
+        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted)));
+
+        Assert.Equal("Wrong event sequence: TripCompleted", exception.Message);
+    }
+
+    [Fact]
+    public void AddEvent_WhenTripIsInProgress_ShouldRejectTripStarted()
+    {
+        var trip = CreateTrip(TripStatus.InProgress);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted)));
+
+        Assert.Equal("Wrong event sequence: TripStarted", exception.Message);
+    }
+
+    [Fact]
+    public void AddEvent_WhenTripIsFinished_ShouldRejectTripStarted()
+    {
+        var trip = CreateTrip(TripStatus.Finished);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted)));
+
+        Assert.Equal("Wrong event sequence: TripStarted", exception.Message);
     }
 }

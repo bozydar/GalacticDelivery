@@ -5,13 +5,14 @@ public enum EventType
     TripStarted,
     TripCompleted,
     CheckpointPassed,
-    CustomEvent
+    AccidentEvent
 }
 
 public class Event
 {
     public Guid Id { get; init; }
-    public DateTime TimeStamp { get; init; }
-    public EventType EventType { get; init; }
-    public string? Description { get; init; }
+    public Guid TripId { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public EventType Type { get; init; }
+    public string? Payload { get; init; }
 }

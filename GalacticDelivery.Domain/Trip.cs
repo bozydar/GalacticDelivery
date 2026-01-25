@@ -16,6 +16,7 @@ public record Trip
     public Guid DriverId { get; init; }
     public Guid VehicleId { get; init; }
     public TripStatus Status { get; private set; }
+    public IList<Event> Events { get; } = new List<Event>();
 
     internal Trip(Guid? id, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status)
     {
@@ -25,32 +26,46 @@ public record Trip
         VehicleId = vehicleId;
         Status = status;
     }
-    
+
     public static Trip Plan(Guid routeId, Guid driverId, Guid vehicleId)
     {
         return new Trip(null, routeId, driverId, vehicleId, TripStatus.Planned);
     }
 
-    public void Start()
+    public void AddEvent(Event @event)
     {
-        if (Status != TripStatus.Planned)
+        if (!IsLegalEvent(@event))
         {
-            throw new InvalidOperationException("Trip hasn't been planned.");
+            throw new InvalidOperationException($"Wrong event sequence: {@event.Type}");
         }
-        Status =  TripStatus.InProgress;
+
+        var newStatus = @event.Type switch
+        {
+            EventType.TripStarted => TripStatus.InProgress,
+            EventType.TripCompleted => TripStatus.Finished,
+            _ => Status
+        };
+
+        Status = newStatus;
     }
 
-    public void Finish()
+    private bool IsLegalEvent(Event @event)
     {
-        if (Status != TripStatus.InProgress) 
+        switch (Status)
         {
-            throw new InvalidOperationException("Trip hasn't been progressed.");
+            case TripStatus.Planned:
+                return @event.Type == EventType.TripStarted;
+            case TripStatus.InProgress:
+                return @event.Type is EventType.TripCompleted or EventType.CheckpointPassed or EventType.AccidentEvent;
+            case TripStatus.Finished:
+                return false;
+            default:
+                throw new InvalidOperationException($"Unknown status: {Status}");
         }
-        Status = TripStatus.Finished;
     }
 }
 
-public interface ITripRepository    
+public interface ITripRepository
 {
     public Task<Trip> Create(Trip trip, DbTransaction? transaction = null);
     public Task<Trip> Update(Trip trip, DbTransaction? transaction = null);
