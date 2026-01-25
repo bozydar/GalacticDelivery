@@ -18,14 +18,15 @@ public sealed class SqliteTripRepository : ITripRepository
     public async Task<Trip> Create(Trip trip, DbTransaction? transaction = null)
     {
         const string sql = """
-                               INSERT INTO Trips (Id, RouteId, VehicleId, DriverId, Status)
-                               VALUES (@Id, @RouteId, @VehicleId, @DriverId, @Status);
+                               INSERT INTO Trips (Id, CreatedAt, RouteId, VehicleId, DriverId, Status)
+                               VALUES (@Id, @CreatedAt, @RouteId, @VehicleId, @DriverId, @Status);
                            """;
 
         var id = Guid.NewGuid();
         await _connection.ExecuteAsync(sql, new
         {
             Id = id.ToString(),
+            trip.CreatedAt,
             RouteId = trip.RouteId.ToString(),
             VehicleId = trip.VehicleId.ToString(),
             DriverId = trip.DriverId.ToString(),
@@ -57,7 +58,7 @@ public sealed class SqliteTripRepository : ITripRepository
     public async Task<Trip> Fetch(Guid tripId)
     {
         const string sql = """
-                               SELECT Id, RouteId, VehicleId, DriverId, Status
+                               SELECT Id, CreatedAt, RouteId, VehicleId, DriverId, Status
                                FROM Trips
                                WHERE Id = @Id;
                            """;
@@ -77,6 +78,7 @@ public sealed class SqliteTripRepository : ITripRepository
 
     private sealed record TripRow(
         string Id,
+        string CreatedAt,
         string RouteId,
         string VehicleId,
         string DriverId,
@@ -84,7 +86,7 @@ public sealed class SqliteTripRepository : ITripRepository
     {
         public Trip ToTrip()
         {
-            return new Trip(Guid.Parse(Id), Guid.Parse(RouteId), Guid.Parse(DriverId), Guid.Parse(VehicleId),
+            return new Trip(Guid.Parse(Id), DateTime.Parse(CreatedAt), Guid.Parse(RouteId), Guid.Parse(DriverId), Guid.Parse(VehicleId),
                 (TripStatus)Enum.Parse(typeof(TripStatus), Status));
         }
     }

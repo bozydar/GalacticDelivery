@@ -12,24 +12,26 @@ public enum TripStatus
 public record Trip
 {
     public Guid? Id { get; init; }
+    public DateTime CreatedAt { get; init; }
     public Guid RouteId { get; init; }
     public Guid DriverId { get; init; }
     public Guid VehicleId { get; init; }
     public TripStatus Status { get; private set; }
     public IList<Event> Events { get; } = new List<Event>();
 
-    internal Trip(Guid? id, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status)
+    internal Trip(Guid? id, DateTime createdAt, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status)
     {
         Id = id;
         RouteId = routeId;
         DriverId = driverId;
         VehicleId = vehicleId;
         Status = status;
+        CreatedAt = createdAt;
     }
 
     public static Trip Plan(Guid routeId, Guid driverId, Guid vehicleId)
     {
-        return new Trip(null, routeId, driverId, vehicleId, TripStatus.Planned);
+        return new Trip(null, DateTime.UtcNow, routeId, driverId, vehicleId, TripStatus.Planned);
     }
 
     public void AddEvent(Event @event)

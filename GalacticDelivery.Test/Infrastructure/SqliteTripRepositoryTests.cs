@@ -60,6 +60,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
         var trip = new Trip(
             id: null,
+            createdAt: DateTime.UtcNow,
             routeId: routeId,
             driverId: driverId,
             vehicleId: vehicleId,
@@ -69,6 +70,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var created = await _repository.Create(trip);
 
         Assert.NotNull(created.Id);
+        Assert.Equal(trip.CreatedAt, created.CreatedAt);
         Assert.Equal(trip.RouteId, created.RouteId);
         Assert.Equal(trip.DriverId, created.DriverId);
         Assert.Equal(trip.VehicleId, created.VehicleId);
@@ -81,6 +83,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
         var trip = new Trip(
             id: null,
+            createdAt: DateTime.UtcNow,
             routeId: routeId,
             driverId: driverId,
             vehicleId: vehicleId,
@@ -91,6 +94,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var fetched = await _repository.Fetch(created.Id!.Value);
 
         Assert.Equal(created.Id, fetched.Id);
+        Assert.Equal(created.CreatedAt, fetched.CreatedAt);
         Assert.Equal(created.RouteId, fetched.RouteId);
         Assert.Equal(created.DriverId, fetched.DriverId);
         Assert.Equal(created.VehicleId, fetched.VehicleId);
@@ -111,6 +115,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
         var trip = new Trip(
             id: null,
+            createdAt: DateTime.UtcNow,
             routeId: routeId,
             driverId: driverId,
             vehicleId: vehicleId,
@@ -121,6 +126,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var (newRouteId, newDriverId, newVehicleId) = await CreateTripDependencies();
         var updated = new Trip(
             id: created.Id,
+            createdAt: DateTime.UtcNow,
             routeId: newRouteId,
             driverId: newDriverId,
             vehicleId: newVehicleId,

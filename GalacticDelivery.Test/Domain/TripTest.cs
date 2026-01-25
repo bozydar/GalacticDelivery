@@ -11,6 +11,7 @@ public class TripTests
     {
         return new Trip(
             id: Guid.NewGuid(),
+            createdAt: new DateTime(),
             routeId: Guid.NewGuid(),
             driverId: Guid.NewGuid(),
             vehicleId: Guid.NewGuid(),

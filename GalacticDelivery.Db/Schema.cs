@@ -25,6 +25,7 @@ public static class Schema
 
                                  CREATE TABLE IF NOT EXISTS Trips (
                                      Id TEXT PRIMARY KEY,
+                                     CreatedAt DATETIME NOT NULL,
                                      RouteId TEXT NOT NULL,
                                      VehicleId TEXT NOT NULL,
                                      DriverId TEXT NOT NULL,
