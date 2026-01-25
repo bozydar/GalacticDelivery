@@ -5,7 +5,7 @@ public enum EventType
     TripStarted,
     TripCompleted,
     CheckpointPassed,
-    AccidentEvent
+    Accident
 }
 
 public class Event

@@ -1,4 +1,5 @@
-﻿using GalacticDelivery.Infrastructure;
+﻿using GalacticDelivery.Db;
+using GalacticDelivery.Infrastructure;
 using GalacticDelivery.Domain;
 
 namespace GalacticDelivery.Test.Infrastructure;
@@ -24,47 +25,7 @@ public sealed class SqliteDriverRepositoryTests : IDisposable
 
     private void InitializeDatabase(SqliteConnection connection)
     {
-        connection.Execute("""
-                           CREATE TABLE IF NOT EXISTS Drivers (
-                                Id TEXT PRIMARY KEY,
-                                FirstName TEXT NOT NULL,
-                                LastName TEXT NOT NULL,
-                                CurrentTripId TEXT NULL
-                           );
-
-                           CREATE TABLE IF NOT EXISTS Vehicles (
-                                Id TEXT PRIMARY KEY,
-                                RegNumber TEXT NOT NULL,
-                                CurrentTripId TEXT NULL
-                           );
-
-                           CREATE TABLE IF NOT EXISTS Routes (
-                                Id TEXT PRIMARY KEY,
-                                "Name" TEXT NOT NULL,
-                                StartPoint TEXT NOT NULL,
-                                EndPoint TEXT NOT NULL
-                           );
-
-                           CREATE TABLE IF NOT EXISTS Trips (
-                               Id TEXT PRIMARY KEY,
-                               RouteId TEXT NOT NULL,
-                               VehicleId TEXT NOT NULL,
-                               DriverId TEXT NOT NULL,
-                               Status TEXT NOT NULL,
-                               FOREIGN KEY (RouteId) REFERENCES Routes(Id),
-                               FOREIGN KEY (VehicleId) REFERENCES Routes(Id),
-                               FOREIGN KEY (DriverId) REFERENCES Routes(Id)
-                           );
-
-                           CREATE TABLE IF NOT EXISTS Events (
-                               Id TEXT PRIMARY KEY,
-                               CreatedAt DATETIME NOT NULL,
-                               TripId TEXT NOT NULL,
-                               EventType TEXT NOT NULL,
-                               Description TEXT NOT NULL,
-                               FOREIGN KEY (TripId) REFERENCES Trips(Id)
-                           );
-                           """);
+        connection.Execute(Schema.V1);
     }
 
     [Fact]

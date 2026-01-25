@@ -38,15 +38,19 @@ public record Trip
         {
             throw new InvalidOperationException($"Wrong event sequence: {@event.Type}");
         }
+        Events.Add(@event);
+        Status = EvalStatus(@event);
+    }
 
+    private TripStatus EvalStatus(Event @event)
+    {
         var newStatus = @event.Type switch
         {
             EventType.TripStarted => TripStatus.InProgress,
             EventType.TripCompleted => TripStatus.Finished,
             _ => Status
         };
-
-        Status = newStatus;
+        return newStatus;
     }
 
     private bool IsLegalEvent(Event @event)
@@ -56,7 +60,7 @@ public record Trip
             case TripStatus.Planned:
                 return @event.Type == EventType.TripStarted;
             case TripStatus.InProgress:
-                return @event.Type is EventType.TripCompleted or EventType.CheckpointPassed or EventType.AccidentEvent;
+                return @event.Type is EventType.TripCompleted or EventType.CheckpointPassed or EventType.Accident;
             case TripStatus.Finished:
                 return false;
             default:

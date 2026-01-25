@@ -1,0 +1,48 @@
+﻿namespace GalacticDelivery.Db;
+
+public static class Schema
+{
+    public const string V1 = """
+                                 CREATE TABLE IF NOT EXISTS Drivers (
+                                      Id TEXT PRIMARY KEY,
+                                      FirstName TEXT NOT NULL,
+                                      LastName TEXT NOT NULL,
+                                      CurrentTripId TEXT NULL
+                                 );
+
+                                 CREATE TABLE IF NOT EXISTS Vehicles (
+                                      Id TEXT PRIMARY KEY,
+                                      RegNumber TEXT NOT NULL,
+                                      CurrentTripId TEXT NULL
+                                 );
+
+                                 CREATE TABLE IF NOT EXISTS Routes (
+                                      Id TEXT PRIMARY KEY,
+                                      Origin TEXT NOT NULL,
+                                      Destination TEXT NOT NULL,
+                                      Checkpoints TEXT NOT NULL
+                                 );
+
+                                 CREATE TABLE IF NOT EXISTS Trips (
+                                     Id TEXT PRIMARY KEY,
+                                     RouteId TEXT NOT NULL,
+                                     VehicleId TEXT NOT NULL,
+                                     DriverId TEXT NOT NULL,
+                                     Status TEXT NOT NULL,
+                                     FOREIGN KEY (RouteId) REFERENCES Routes(Id),
+                                     FOREIGN KEY (VehicleId) REFERENCES Routes(Id),
+                                     FOREIGN KEY (DriverId) REFERENCES Routes(Id)
+                                 );
+
+                                 CREATE TABLE IF NOT EXISTS Events (
+                                     Id TEXT PRIMARY KEY,
+                                     CreatedAt DATETIME NOT NULL,
+                                     TripId TEXT NOT NULL,
+                                     EventType TEXT NOT NULL,
+                                     Description TEXT NOT NULL,
+                                     FOREIGN KEY (TripId) REFERENCES Trips(Id)
+                                 );
+
+                                 CREATE INDEX IF NOT EXISTS IDX_Events_TripId ON Events(TripId);
+                                 """;
+}

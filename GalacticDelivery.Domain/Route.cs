@@ -1,14 +1,19 @@
 namespace GalacticDelivery.Domain;
 
-public class Route
-{
-    public Guid? Id { get; init; }
-    public required string StartPoint { get; init; }
-    public required string EndPoint { get; init; }
-}
+public record Checkpoint(
+    string Name
+);
+
+public record Route(
+    Guid? Id,
+    string Origin,
+    string Destination,
+    IList<Checkpoint> Checkpoints
+);
 
 public interface IRouteRepository
 {
     public Task<Route> Create(Route route);
     public Task<Route> Fetch(Guid routeId);
+    public Task<IEnumerable<Route>> FetchAll();
 }

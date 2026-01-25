@@ -38,7 +38,7 @@ public sealed class SqliteTripRepository : ITripRepository
     public async Task<Trip> Update(Trip trip, DbTransaction? transaction = null)
     {
         const string sql = """
-                               UPDATE Trips SET (RouteId = @RouteId, VehicleId = @VehicleId, DriverId = @DriverId, Status = @Status)
+                               UPDATE Trips SET RouteId = @RouteId, VehicleId = @VehicleId, DriverId = @DriverId, Status = @Status
                                WHERE Id = @Id;
                            """;
 

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalacticDelivery.Infrastruc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalacticDelivery.Test", "GalacticDelivery.Test\GalacticDelivery.Test.csproj", "{D79EE8B5-D970-4BD8-8CA6-89E195DAEFE1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalacticDelivery.Db", "GalacticDelivery.Db\GalacticDelivery.Db.csproj", "{631877D2-A950-49CB-B2F9-DBBFD3A0E2CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,5 +43,9 @@ Global
 		{D79EE8B5-D970-4BD8-8CA6-89E195DAEFE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D79EE8B5-D970-4BD8-8CA6-89E195DAEFE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D79EE8B5-D970-4BD8-8CA6-89E195DAEFE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{631877D2-A950-49CB-B2F9-DBBFD3A0E2CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{631877D2-A950-49CB-B2F9-DBBFD3A0E2CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{631877D2-A950-49CB-B2F9-DBBFD3A0E2CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{631877D2-A950-49CB-B2F9-DBBFD3A0E2CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
