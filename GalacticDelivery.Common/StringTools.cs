@@ -1,6 +1,6 @@
-namespace GalacticDelivery.Infrastructure;
+namespace GalacticDelivery.Common;
 
-internal static class StringTools
+public static class StringTools
 {
     public static Guid? MaybeGuid(string? text)
     {
