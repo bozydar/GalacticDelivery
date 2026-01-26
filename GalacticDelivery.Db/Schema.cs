@@ -45,5 +45,32 @@ public static class Schema
                                  );
 
                                  CREATE INDEX IF NOT EXISTS IDX_Events_TripId ON Events(TripId);
+
+                                 CREATE TABLE TripReports (
+                                   TripId TEXT PRIMARY KEY,
+                                   GeneratedAt TEXT NOT NULL,
+                                   CreatedAt TEXT NOT NULL,
+                                   StartedAt TEXT NULL,
+                                   CompletedAt TEXT NULL,
+                                   DurationSeconds INTEGER NULL,
+                                   DriverId TEXT NOT NULL,
+                                   DriverName TEXT NOT NULL,
+                                   VehicleId TEXT NOT NULL,
+                                   VehicleRegistrationNumber TEXT NOT NULL,
+                                   RouteId TEXT NOT NULL,
+                                   RouteOrigin TEXT NOT NULL,
+                                   RouteDestination TEXT NOT NULL,
+                                   CheckpointsPlanned TEXT NOT NULL,
+                                   CheckpointsPassed TEXT NOT NULL,
+                                   IncidentsCount INTEGER NOT NULL
+                                 );
+                                 
+                                 CREATE TABLE TripReportEvents (
+                                   Id TEXT PRIMARY KEY,
+                                   TripId TEXT NOT NULL,
+                                   CreatedAt TEXT NOT NULL,
+                                   Type TEXT NOT NULL,
+                                   Payload TEXT NULL
+                                 );
                                  """;
 }

@@ -1,6 +1,6 @@
 @GalacticDelivery.Api.Web_HostAddress = http://localhost:5114
 
-GET {{GalacticDelivery.Api.Web_HostAddress}}/weatherforecast/
+GET {{GalacticDelivery.Api.Web_HostAddress}}/api/drivers/free
 Accept: application/json
 
 ###
