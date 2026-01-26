@@ -1,4 +1,6 @@
-﻿using System.Data.Common;
+﻿using System.ComponentModel;
+using System.Data.Common;
+using GalacticDelivery.Common;
 
 namespace GalacticDelivery.Domain;
 
@@ -17,9 +19,10 @@ public record Trip
     public Guid DriverId { get; init; }
     public Guid VehicleId { get; init; }
     public TripStatus Status { get; init; }
-    public IList<Event> Events { get; init; } 
+    public IList<Event> Events { get; init; }
 
-    internal Trip(Guid? id, DateTime createdAt, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status, IList<Event> events)
+    internal Trip(Guid? id, DateTime createdAt, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status,
+        IList<Event> events)
     {
         Id = id;
         RouteId = routeId;
@@ -35,15 +38,17 @@ public record Trip
         return new Trip(null, DateTime.UtcNow, routeId, driverId, vehicleId, TripStatus.Planned, []);
     }
 
-    public Trip AddEvent(Event @event)
+    public Result<Trip> AddEvent(Event @event)
     {
-        if (!IsLegalEvent(@event))
+        var legality = IsLegalEvent(@event);
+        if (legality.IsFailure)
         {
-            throw new InvalidOperationException($"Wrong event sequence: {@event.Type}");
+            return Result<Trip>.Failure(legality.Error!);
         }
+
         var events = Events.Concat([@event]);
         var status = EvalStatus(@event);
-        return this with { Events = events.ToList(), Status = status };
+        return Result<Trip>.Success(this with { Events = events.ToList(), Status = status });
     }
 
     private TripStatus EvalStatus(Event @event)
@@ -57,18 +62,25 @@ public record Trip
         return newStatus;
     }
 
-    private bool IsLegalEvent(Event @event)
+    private Result IsLegalEvent(Event @event)
     {
         switch (Status)
         {
             case TripStatus.Planned:
-                return @event.Type == EventType.TripStarted;
+                return @event.Type == EventType.TripStarted
+                    ? Result.Success()
+                    : Result.Failure(new Error("invalid_event",
+                        $"Event {@event.Type} not allowed for {nameof(TripStatus.Planned)} trip."));
             case TripStatus.InProgress:
-                return @event.Type is EventType.TripCompleted or EventType.CheckpointPassed or EventType.Accident;
+                return @event.Type is EventType.TripCompleted or EventType.CheckpointPassed or EventType.Accident
+                    ? Result.Success()
+                    : Result.Failure(new Error("invalid_event",
+                        $"Event {@event.Type} not allowed for {nameof(TripStatus.InProgress)} trip."));
             case TripStatus.Finished:
-                return false;
+                return Result.Failure(new Error("invalid_event",
+                    $"Event {@event.Type} not allowed for {nameof(TripStatus.Finished)} trip."));
             default:
-                throw new InvalidOperationException($"Unknown status: {Status}");
+                throw new InvalidEnumArgumentException(nameof(@event), (int)Status, typeof(TripStatus));
         }
     }
 }

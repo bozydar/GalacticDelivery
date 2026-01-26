@@ -1,3 +1,4 @@
+using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 
 namespace GalacticDelivery.Test.Domain;
@@ -44,7 +45,10 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.Planned);
 
-        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
+
+        Assert.True(result.IsSuccess);
+        trip = result.Value!;
 
         Assert.Equal(TripStatus.InProgress, trip.Status);
     }
@@ -54,7 +58,10 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+
+        Assert.True(result.IsSuccess);
+        trip = result.Value!;
 
         Assert.Equal(TripStatus.Finished, trip.Status);
     }
@@ -64,7 +71,10 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.CheckpointPassed, "Checkpoint-1"));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.CheckpointPassed, "Checkpoint-1"));
+
+        Assert.True(result.IsSuccess);
+        trip = result.Value!;
 
         Assert.Equal(TripStatus.InProgress, trip.Status);
     }
@@ -74,21 +84,25 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.Planned);
 
-        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
-        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        var started = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
+        Assert.True(started.IsSuccess);
+        trip = started.Value!;
+        var completed = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        Assert.True(completed.IsSuccess);
+        trip = completed.Value!;
 
         Assert.Equal(TripStatus.Finished, trip.Status);
     }
 
     [Fact]
-    public void AddEvent_WhenPlannedThenNotStarted_ShouldThrowInvalidOperationException()
+    public void AddEvent_WhenPlannedThenNotStarted_ShouldFail()
     {
         var trip = CreateTrip(TripStatus.Planned);
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted)));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
 
-        Assert.Equal($"Wrong event sequence: TripCompleted", exception.Message);
+        Assert.True(result.IsFailure);
+        Assert.Equal("invalid_event", result.Error!.Code);
     }
 
     [Fact]
@@ -96,12 +110,14 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        var completed = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        Assert.True(completed.IsSuccess);
+        trip = completed.Value!;
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted)));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
 
-        Assert.Equal("Wrong event sequence: TripCompleted", exception.Message);
+        Assert.True(result.IsFailure);
+        Assert.Equal("invalid_event", result.Error!.Code);
     }
 
     [Fact]
@@ -109,10 +125,10 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted)));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
 
-        Assert.Equal("Wrong event sequence: TripStarted", exception.Message);
+        Assert.True(result.IsFailure);
+        Assert.Equal("invalid_event", result.Error!.Code);
     }
 
     [Fact]
@@ -120,9 +136,9 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.Finished);
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted)));
+        var result = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
 
-        Assert.Equal("Wrong event sequence: TripStarted", exception.Message);
+        Assert.True(result.IsFailure);
+        Assert.Equal("invalid_event", result.Error!.Code);
     }
 }

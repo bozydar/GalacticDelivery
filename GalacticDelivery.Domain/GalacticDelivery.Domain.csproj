@@ -10,5 +10,8 @@
             <_Parameter1>GalacticDelivery.Domain.Tests</_Parameter1>
         </AssemblyAttribute>
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\GalacticDelivery.Common\GalacticDelivery.Common.csproj" />
+    </ItemGroup>
 
 </Project>

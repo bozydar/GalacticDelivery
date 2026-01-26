@@ -151,8 +151,8 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var trip = Trip.Plan(routeId, driverId, vehicleId);
         var created = await _repository.Create(trip);
 
-        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.TripStarted, "start"));
-        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.CheckpointPassed, "cp-1"));
+        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.TripStarted, "start")).Value!;
+        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.CheckpointPassed, "cp-1")).Value!;
 
         created = await _repository.Update(created);
 
@@ -170,7 +170,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var trip = Trip.Plan(routeId, driverId, vehicleId);
         var created = await _repository.Create(trip);
 
-        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.TripStarted, "start"));
+        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.TripStarted, "start")).Value!;
         created = await _repository.Update(created);
         await _repository.Update(created);
 

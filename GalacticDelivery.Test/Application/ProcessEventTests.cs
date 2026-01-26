@@ -86,7 +86,8 @@ public sealed class ProcessEventTests : IDisposable
         var tripId = await CreateTrip(TripStatus.Planned);
         var command = new ProcessEventCommand(tripId, EventType.TripStarted, "start");
 
-        await _useCase.Execute(command);
+        var result = await _useCase.Execute(command);
+        Assert.True(result.IsSuccess);
 
         var events = await FetchEventTypes(tripId);
         var trip = await _tripRepository.Fetch(tripId);
@@ -102,7 +103,8 @@ public sealed class ProcessEventTests : IDisposable
         var tripId = await CreateTrip(TripStatus.Finished);
         var command = new ProcessEventCommand(tripId, EventType.TripStarted, "invalid");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _useCase.Execute(command));
+        var result = await _useCase.Execute(command);
+        Assert.True(result.IsFailure);
 
         var events = await FetchEventTypes(tripId);
         var trip = await _tripRepository.Fetch(tripId);

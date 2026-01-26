@@ -1,3 +1,4 @@
+using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 
 namespace GalacticDelivery.Application;
@@ -17,16 +18,21 @@ public class ProcessEvent
         _tripRepository = tripRepository;
     }
 
-    public async Task<Guid> Execute(
+    public async Task<Result<Guid>> Execute(
         ProcessEventCommand command)
     {
         var @event = ProcessEventCommandToEvent(command);
         
         var trip = await _tripRepository.Fetch(@event.TripId);
-        trip = trip.AddEvent(@event);
+        var addResult = trip.AddEvent(@event);
+        if (addResult.IsFailure)
+        {
+            return Result<Guid>.Failure(addResult.Error!);
+        }
+        trip = addResult.Value!;
         trip = await _tripRepository.Update(trip);
         
-        return (Guid)trip.Id!;
+        return Result<Guid>.Success((Guid)trip.Id!);
     }
 
     private Event ProcessEventCommandToEvent(ProcessEventCommand command)
