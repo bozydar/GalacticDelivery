@@ -39,7 +39,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         var id = driver.Id ?? Guid.NewGuid();
 
         const string sql = """
-                               UPDATE Drivers SET (FirstName = @FirstName, LastName = @LastName, CurrentTripId = @CurrentTripId)
+                               UPDATE Drivers SET FirstName = @FirstName, LastName = @LastName, CurrentTripId = @CurrentTripId
                                WHERE Id = @Id;
                            """;
 
@@ -54,7 +54,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         return driver;
     }
 
-    public async Task<Driver> Fetch(Guid driverId)
+    public async Task<Driver> Fetch(Guid driverId, IDbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, FirstName, LastName, CurrentTripId
@@ -64,15 +64,16 @@ public sealed class SqliteDriverRepository : IDriverRepository
 
         var row = await _connection.QuerySingleOrDefaultAsync<DriverRow>(
             sql,
-            new { Id = driverId.ToString() }
+            new { Id = driverId.ToString() },
+            transaction: transaction
         );
 
         if (row is null)
         {
             throw new KeyNotFoundException($"Driver {driverId} not found");
         }
-
-        return new Driver(Guid.Parse(row.Id), row.FirstName, row.LastName, Guid.Parse(row.CurrentTripId));
+        
+        return new Driver(Guid.Parse(row.Id), row.FirstName, row.LastName, StringTools.MaybeGuid(row.CurrentTripId));
     }
 
     public async Task<IEnumerable<Guid>> FetchAllFree()

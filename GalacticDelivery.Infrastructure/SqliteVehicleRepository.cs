@@ -14,9 +14,9 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         _connection = connection;
     }
 
-    public async Task<Vehicle> Create(Vehicle Vehicle)
+    public async Task<Vehicle> Create(Vehicle vehicle)
     {
-        var id = Vehicle.Id ?? Guid.NewGuid();
+        var id = vehicle.Id ?? Guid.NewGuid();
 
         const string sql = """
                                INSERT INTO Vehicles (Id, RegNumber, CurrentTripId)
@@ -26,16 +26,16 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         await _connection.ExecuteAsync(sql, new
         {
             Id = id.ToString(),
-            Vehicle.RegNumber,
-            Vehicle.CurrentTripId
+            vehicle.RegNumber,
+            vehicle.CurrentTripId
         });
 
-        return Vehicle with { Id = id };
+        return vehicle with { Id = id };
     }
 
-    public async Task<Vehicle> Update(Vehicle Vehicle, IDbTransaction? transaction = null)
+    public async Task<Vehicle> Update(Vehicle vehicle, IDbTransaction? transaction = null)
     {
-        var id = Vehicle.Id ?? Guid.NewGuid();
+        var id = vehicle.Id ?? Guid.NewGuid();
 
         const string sql = """
                                UPDATE Vehicles SET RegNumber = @RegNumber, CurrentTripId = @CurrentTripId
@@ -45,14 +45,14 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         await _connection.ExecuteAsync(sql, new
         {
             Id = id.ToString(),
-            Vehicle.RegNumber,
-            Vehicle.CurrentTripId
+            vehicle.RegNumber,
+            vehicle.CurrentTripId
         }, transaction: transaction);
 
-        return Vehicle with { Id = id };
+        return vehicle with { Id = id };
     }
 
-    public async Task<Vehicle> Fetch(Guid VehicleId)
+    public async Task<Vehicle> Fetch(Guid vehicleId, IDbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, RegNumber, CurrentTripId
@@ -62,20 +62,21 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
 
         var row = await _connection.QuerySingleOrDefaultAsync<VehicleRow>(
             sql,
-            new { Id = VehicleId.ToString() }
+            new { Id = vehicleId.ToString() },
+            transaction: transaction
         );
 
         if (row is null)
         {
-            throw new KeyNotFoundException($"Vehicle {VehicleId} not found");
+            throw new KeyNotFoundException($"Vehicle {vehicleId} not found");
         }
 
-        return new Vehicle(Guid.Parse(row.Id), row.RegNumber, row.CurrentTripId);
+        return new Vehicle(Guid.Parse(row.Id), row.RegNumber, StringTools.MaybeGuid(row.CurrentTripId));
     }
 
     private sealed record VehicleRow(
         string Id,
         string RegNumber,
-        Guid? CurrentTripId
+        string CurrentTripId
     );
 }

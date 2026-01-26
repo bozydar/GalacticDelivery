@@ -8,6 +8,6 @@ public interface IDriverRepository
 {
     public Task<Driver> Create(Driver driver, IDbTransaction? transaction = null);
     public Task<Driver> Update(Driver driver, IDbTransaction? transaction = null);
-    public Task<Driver> Fetch(Guid driverId);
+    public Task<Driver> Fetch(Guid driverId, IDbTransaction? transaction = null);
     public Task<IEnumerable<Guid>> FetchAllFree();
 }
