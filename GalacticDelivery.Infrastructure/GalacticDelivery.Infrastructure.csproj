@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
@@ -11,8 +11,9 @@
       <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
     </ItemGroup>
 
-    <ItemGroup>
+  <ItemGroup>
+      <ProjectReference Include="..\GalacticDelivery.Application\GalacticDelivery.Application.csproj" />
       <ProjectReference Include="..\GalacticDelivery.Domain\GalacticDelivery.Domain.csproj" />
-    </ItemGroup>
+  </ItemGroup>
 
 </Project>

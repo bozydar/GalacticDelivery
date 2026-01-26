@@ -19,15 +19,35 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         var id = Vehicle.Id ?? Guid.NewGuid();
 
         const string sql = """
-                               INSERT INTO Vehicles (Id, RegNumber)
-                               VALUES (@Id, @RegNumber);
+                               INSERT INTO Vehicles (Id, RegNumber, CurrentTripId)
+                               VALUES (@Id, @RegNumber, @CurrentTripId);
                            """;
 
         await _connection.ExecuteAsync(sql, new
         {
             Id = id.ToString(),
-            Vehicle.RegNumber
+            Vehicle.RegNumber,
+            Vehicle.CurrentTripId
         });
+
+        return Vehicle with { Id = id };
+    }
+
+    public async Task<Vehicle> Update(Vehicle Vehicle, IDbTransaction? transaction = null)
+    {
+        var id = Vehicle.Id ?? Guid.NewGuid();
+
+        const string sql = """
+                               UPDATE Vehicles SET RegNumber = @RegNumber, CurrentTripId = @CurrentTripId
+                               WHERE Id = @Id;
+                           """;
+
+        await _connection.ExecuteAsync(sql, new
+        {
+            Id = id.ToString(),
+            Vehicle.RegNumber,
+            Vehicle.CurrentTripId
+        }, transaction: transaction);
 
         return Vehicle with { Id = id };
     }
@@ -35,7 +55,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
     public async Task<Vehicle> Fetch(Guid VehicleId)
     {
         const string sql = """
-                               SELECT Id, RegNumber
+                               SELECT Id, RegNumber, CurrentTripId
                                FROM Vehicles
                                WHERE Id = @Id;
                            """;
@@ -50,11 +70,12 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
             throw new KeyNotFoundException($"Vehicle {VehicleId} not found");
         }
 
-        return new Vehicle(Guid.Parse(row.Id), row.RegNumber);
+        return new Vehicle(Guid.Parse(row.Id), row.RegNumber, row.CurrentTripId);
     }
 
     private sealed record VehicleRow(
         string Id,
-        string RegNumber
+        string RegNumber,
+        Guid? CurrentTripId
     );
 }
