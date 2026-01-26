@@ -19,7 +19,9 @@
 
     <ItemGroup>
       <ProjectReference Include="..\GalacticDelivery.Application\GalacticDelivery.Application.csproj" />
+      <ProjectReference Include="..\GalacticDelivery.Db\GalacticDelivery.Db.csproj" />
       <ProjectReference Include="..\GalacticDelivery.Domain\GalacticDelivery.Domain.csproj" />
+      <ProjectReference Include="..\GalacticDelivery.Infrastructure\GalacticDelivery.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

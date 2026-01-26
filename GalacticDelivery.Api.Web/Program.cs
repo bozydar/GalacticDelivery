@@ -1,12 +1,29 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using GalacticDelivery.Application;
+using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
+using GalacticDelivery.Infrastructure;
+using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+var sqlitePath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "identifier.sqlite"));
+var connectionString = builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=:memory:";
+builder.Services.AddScoped(_ =>
+{
+    var connection = new SqliteConnection(connectionString);
+    connection.Open();
+    using var command = connection.CreateCommand();
+    command.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+    command.ExecuteNonQuery();
+    return connection;
+});
+builder.Services.AddScoped<IDriverRepository, SqliteDriverRepository>();
+builder.Services.AddScoped<FetchFreeDrivers>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -24,6 +41,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+using (var scope = app.Services.CreateScope())
+{
+    var connection = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
+    using var command = connection.CreateCommand();
+    command.CommandText = Schema.V1;
+    command.ExecuteNonQuery();
+}
 
 app.MapGet("/api/vehicles", () =>
 {
@@ -46,6 +71,15 @@ app.MapGet("/api/drivers", () =>
     ];
     return result;
 }).WithName("GetDrivers");
+
+app.MapGet("/api/drivers/free", async (FetchFreeDrivers useCase) =>
+    {
+        var result = await useCase.Execute();
+        return result.Match(
+            onSuccess: ids => Results.Ok(ids),
+            onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
+    })
+    .WithName("GetFreeDrivers");
 
 app.MapGet("/api/routes", () =>
 {
