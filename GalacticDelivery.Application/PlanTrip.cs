@@ -8,14 +8,14 @@ public record CreateTripCommand(
     Guid CarId
 );
 
-public class CreateTrip
+public class PlanTrip
 {
     private readonly ITripRepository _tripRepository;
     private readonly IDriverRepository _driverRepository;
     private readonly IVehicleRepository _vehicleRepository;
     private readonly ITransactionManager _transactionManager;
 
-    public CreateTrip(
+    public PlanTrip(
         ITripRepository tripRepository,
         IDriverRepository driverRepository,
         IVehicleRepository vehicleRepository,

@@ -7,21 +7,23 @@ namespace GalacticDelivery.Test.Application;
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Moq;
 using Xunit;
 
-public sealed class CreateTripTests : IDisposable
+public sealed class PlanTripTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly SqliteTripRepository _tripRepository;
     private readonly SqliteDriverRepository _driverRepository;
     private readonly SqliteVehicleRepository _vehicleRepository;
     private readonly SqliteRouteRepository _routeRepository;
-    private readonly CreateTrip _createTrip;
+    private readonly PlanTrip _planTrip;
 
-    public CreateTripTests()
+    public PlanTripTests()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
         _connection.Open();
@@ -32,7 +34,7 @@ public sealed class CreateTripTests : IDisposable
         _vehicleRepository = new SqliteVehicleRepository(_connection);
         _routeRepository = new SqliteRouteRepository(_connection);
         var transactionManager = new SqliteTransactionManager(_connection);
-        _createTrip = new CreateTrip(
+        _planTrip = new PlanTrip(
             _tripRepository,
             _driverRepository,
             _vehicleRepository,
@@ -103,7 +105,7 @@ public sealed class CreateTripTests : IDisposable
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
         var command = new CreateTripCommand(routeId, driverId, vehicleId);
 
-        var tripId = await _createTrip.Execute(command);
+        var tripId = await _planTrip.Execute(command);
 
         var trip = await _tripRepository.Fetch(tripId);
         Assert.Equal(routeId, trip.RouteId);
@@ -122,17 +124,23 @@ public sealed class CreateTripTests : IDisposable
     public async Task Execute_ShouldRollback_WhenVehicleUpdateFails()
     {
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
-        await _connection.ExecuteAsync("""
-                                        CREATE TRIGGER AbortVehicleUpdate
-                                        BEFORE UPDATE ON Vehicles
-                                        BEGIN
-                                            SELECT RAISE(ABORT, 'vehicle update blocked');
-                                        END;
-                                        """);
+        var vehicle = await _vehicleRepository.Fetch(vehicleId);
+        var vehicleRepository = new Mock<IVehicleRepository>();
+        vehicleRepository
+            .Setup(repo => repo.Fetch(vehicleId, It.IsAny<IDbTransaction?>()))
+            .ReturnsAsync(vehicle);
+        vehicleRepository
+            .Setup(repo => repo.Update(It.IsAny<Vehicle>(), It.IsAny<IDbTransaction?>()))
+            .ThrowsAsync(new SqliteException("vehicle update blocked", 1));
+        var createTrip = new PlanTrip(
+            _tripRepository,
+            _driverRepository,
+            vehicleRepository.Object,
+            new SqliteTransactionManager(_connection));
 
         var command = new CreateTripCommand(routeId, driverId, vehicleId);
 
-        await Assert.ThrowsAsync<SqliteException>(() => _createTrip.Execute(command));
+        await Assert.ThrowsAsync<SqliteException>(() => createTrip.Execute(command));
 
         var tripCount = await FetchTripCount();
         var driverTripId = await FetchDriverCurrentTripId(driverId);
