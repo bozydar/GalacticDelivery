@@ -16,9 +16,3 @@ public record Event(
     DateTime CreatedAt,
     EventType Type,
     string? Payload);
-
-public interface IEventRepository
-{
-    public Task<Event> Create(Event @event, IDbTransaction? transaction = null);
-    public Task<IEnumerable<Event>> FetchByTripId(Guid tripId);
-}

@@ -6,6 +6,7 @@ namespace GalacticDelivery.Test.Infrastructure;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.Sqlite;
@@ -54,23 +55,37 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         return (createdRoute.Id!.Value, createdDriver.Id!.Value, createdVehicle.Id!.Value);
     }
 
+    private static Event CreateEvent(Guid tripId, EventType type, string? payload = null)
+    {
+        return new Event(
+            Id: null,
+            TripId: tripId,
+            CreatedAt: DateTime.UtcNow,
+            Type: type,
+            Payload: payload
+        );
+    }
+
+    private async Task<IReadOnlyList<EventType>> FetchEventTypes(Guid tripId)
+    {
+        const string sql = """
+                           SELECT Type
+                           FROM Events
+                           WHERE TripId IS @TripId
+                           """;
+        var rows = await _connection.QueryAsync<string>(sql, new { TripId = tripId.ToString() });
+        return rows.Select(Enum.Parse<EventType>).ToList();
+    }
+
     [Fact]
     public async Task Create_ShouldInsertTrip()
     {
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
-        var trip = new Trip(
-            id: null,
-            createdAt: DateTime.UtcNow,
-            routeId: routeId,
-            driverId: driverId,
-            vehicleId: vehicleId,
-            status: TripStatus.Planned
-        );
+        var trip = Trip.Plan(routeId, driverId, vehicleId);
 
         var created = await _repository.Create(trip);
 
         Assert.NotNull(created.Id);
-        Assert.Equal(trip.CreatedAt, created.CreatedAt);
         Assert.Equal(trip.RouteId, created.RouteId);
         Assert.Equal(trip.DriverId, created.DriverId);
         Assert.Equal(trip.VehicleId, created.VehicleId);
@@ -81,20 +96,12 @@ public sealed class SqliteTripRepositoryTests : IDisposable
     public async Task Fetch_ShouldReturnTrip_WhenExists()
     {
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
-        var trip = new Trip(
-            id: null,
-            createdAt: DateTime.UtcNow,
-            routeId: routeId,
-            driverId: driverId,
-            vehicleId: vehicleId,
-            status: TripStatus.InProgress
-        );
+        var trip = Trip.Plan(routeId, driverId, vehicleId);
 
         var created = await _repository.Create(trip);
         var fetched = await _repository.Fetch(created.Id!.Value);
 
         Assert.Equal(created.Id, fetched.Id);
-        Assert.Equal(created.CreatedAt, fetched.CreatedAt);
         Assert.Equal(created.RouteId, fetched.RouteId);
         Assert.Equal(created.DriverId, fetched.DriverId);
         Assert.Equal(created.VehicleId, fetched.VehicleId);
@@ -113,24 +120,18 @@ public sealed class SqliteTripRepositoryTests : IDisposable
     public async Task Update_ShouldPersistChanges()
     {
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
-        var trip = new Trip(
-            id: null,
-            createdAt: DateTime.UtcNow,
-            routeId: routeId,
-            driverId: driverId,
-            vehicleId: vehicleId,
-            status: TripStatus.Planned
-        );
+        var trip = Trip.Plan(routeId, driverId, vehicleId);
 
         var created = await _repository.Create(trip);
         var (newRouteId, newDriverId, newVehicleId) = await CreateTripDependencies();
         var updated = new Trip(
             id: created.Id,
-            createdAt: DateTime.UtcNow,
+            createdAt: created.CreatedAt,
             routeId: newRouteId,
             driverId: newDriverId,
             vehicleId: newVehicleId,
-            status: TripStatus.Finished
+            status: TripStatus.Finished,
+            events: []
         );
 
         await _repository.Update(updated);
@@ -141,6 +142,42 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         Assert.Equal(updated.DriverId, fetched.DriverId);
         Assert.Equal(updated.VehicleId, fetched.VehicleId);
         Assert.Equal(updated.Status, fetched.Status);
+    }
+
+    [Fact]
+    public async Task Update_ShouldPersistEventsFromTrip()
+    {
+        var (routeId, driverId, vehicleId) = await CreateTripDependencies();
+        var trip = Trip.Plan(routeId, driverId, vehicleId);
+        var created = await _repository.Create(trip);
+
+        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.TripStarted, "start"));
+        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.CheckpointPassed, "cp-1"));
+
+        created = await _repository.Update(created);
+
+        var eventTypes = await FetchEventTypes(created.Id!.Value);
+
+        Assert.Equal(2, eventTypes.Count);
+        Assert.Contains(EventType.TripStarted, eventTypes);
+        Assert.Contains(EventType.CheckpointPassed, eventTypes);
+    }
+
+    [Fact]
+    public async Task Update_ShouldNotDuplicateExistingEvents()
+    {
+        var (routeId, driverId, vehicleId) = await CreateTripDependencies();
+        var trip = Trip.Plan(routeId, driverId, vehicleId);
+        var created = await _repository.Create(trip);
+
+        created = created.AddEvent(CreateEvent(created.Id!.Value, EventType.TripStarted, "start"));
+        created = await _repository.Update(created);
+        await _repository.Update(created);
+
+        var eventTypes = await FetchEventTypes(created.Id!.Value);
+
+        Assert.Single(eventTypes);
+        Assert.Equal(EventType.TripStarted, eventTypes[0]);
     }
 
     public void Dispose()

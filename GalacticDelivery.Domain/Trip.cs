@@ -16,10 +16,10 @@ public record Trip
     public Guid RouteId { get; init; }
     public Guid DriverId { get; init; }
     public Guid VehicleId { get; init; }
-    public TripStatus Status { get; private set; }
-    public IList<Event> Events { get; } = new List<Event>();
+    public TripStatus Status { get; init; }
+    public IList<Event> Events { get; init; } 
 
-    internal Trip(Guid? id, DateTime createdAt, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status)
+    internal Trip(Guid? id, DateTime createdAt, Guid routeId, Guid driverId, Guid vehicleId, TripStatus status, IList<Event> events)
     {
         Id = id;
         RouteId = routeId;
@@ -27,21 +27,23 @@ public record Trip
         VehicleId = vehicleId;
         Status = status;
         CreatedAt = createdAt;
+        Events = events;
     }
 
     public static Trip Plan(Guid routeId, Guid driverId, Guid vehicleId)
     {
-        return new Trip(null, DateTime.UtcNow, routeId, driverId, vehicleId, TripStatus.Planned);
+        return new Trip(null, DateTime.UtcNow, routeId, driverId, vehicleId, TripStatus.Planned, []);
     }
 
-    public void AddEvent(Event @event)
+    public Trip AddEvent(Event @event)
     {
         if (!IsLegalEvent(@event))
         {
             throw new InvalidOperationException($"Wrong event sequence: {@event.Type}");
         }
-        Events.Add(@event);
-        Status = EvalStatus(@event);
+        var events = Events.Concat([@event]);
+        var status = EvalStatus(@event);
+        return this with { Events = events.ToList(), Status = status };
     }
 
     private TripStatus EvalStatus(Event @event)

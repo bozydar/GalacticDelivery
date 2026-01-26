@@ -15,7 +15,8 @@ public class TripTests
             routeId: Guid.NewGuid(),
             driverId: Guid.NewGuid(),
             vehicleId: Guid.NewGuid(),
-            status: status
+            status: status,
+            events: []
         );
     }
 
@@ -43,7 +44,7 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.Planned);
 
-        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
+        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
 
         Assert.Equal(TripStatus.InProgress, trip.Status);
     }
@@ -53,7 +54,7 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
 
         Assert.Equal(TripStatus.Finished, trip.Status);
     }
@@ -73,8 +74,8 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.Planned);
 
-        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
-        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripStarted));
+        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
 
         Assert.Equal(TripStatus.Finished, trip.Status);
     }
@@ -95,7 +96,7 @@ public class TripTests
     {
         var trip = CreateTrip(TripStatus.InProgress);
 
-        trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
+        trip = trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted));
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
             trip.AddEvent(CreateEvent(trip.Id!.Value, EventType.TripCompleted)));
