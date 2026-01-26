@@ -2,7 +2,11 @@ using System.Data;
 
 namespace GalacticDelivery.Domain;
 
-public record Vehicle(Guid? Id, string RegNumber, Guid? CurrentTripId = null);
+public record Vehicle(Guid? Id, string RegNumber, Guid? CurrentTripId = null)
+{
+    public Vehicle AssignTrip(Guid tripId) => this with { CurrentTripId = tripId };
+    public Vehicle UnassignTrip() => this with { CurrentTripId = null };
+}
 
 public interface IVehicleRepository
 {

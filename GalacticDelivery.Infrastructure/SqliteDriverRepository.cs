@@ -15,7 +15,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         _connection = connection;
     }
 
-    public async Task<Driver> Create(Driver driver, IDbTransaction? tx)
+    public async Task<Driver> Create(Driver driver, IDbTransaction? transaction)
     {
         var id = driver.Id ?? Guid.NewGuid();
 
@@ -30,12 +30,12 @@ public sealed class SqliteDriverRepository : IDriverRepository
             driver.FirstName,
             driver.LastName,
             driver.CurrentTripId
-        }, transaction: tx);
+        }, transaction: transaction);
 
         return driver with { Id = id };
     }
 
-    public async Task<Driver> Update(Driver driver, IDbTransaction? tx)
+    public async Task<Driver> Update(Driver driver, IDbTransaction? transaction = null)
     {
         var id = driver.Id ?? Guid.NewGuid();
 
@@ -50,7 +50,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
             driver.FirstName,
             driver.LastName,
             CurrentTripId = driver.CurrentTripId.ToString()
-        }, transaction: tx);
+        }, transaction: transaction);
 
         return driver;
     }

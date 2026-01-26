@@ -1,4 +1,5 @@
 using GalacticDelivery.Application;
+using GalacticDelivery.Common;
 using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
 using GalacticDelivery.Infrastructure;
@@ -32,7 +33,8 @@ public sealed class ProcessEventTests : IDisposable
         _driverRepository = new SqliteDriverRepository(_connection);
         _vehicleRepository = new SqliteVehicleRepository(_connection);
         _routeRepository = new SqliteRouteRepository(_connection);
-        _useCase = new ProcessEvent(_tripRepository);
+        var transactionManager = new SqliteTransactionManager(_connection);
+        _useCase = new ProcessEvent(_tripRepository, transactionManager, _driverRepository, _vehicleRepository);
     }
 
     private static void InitializeDatabase(SqliteConnection connection)
@@ -65,8 +67,42 @@ public sealed class ProcessEventTests : IDisposable
         var trip = status == TripStatus.Planned
             ? Trip.Plan(routeId, driverId, vehicleId)
             : new Trip(null, DateTime.UtcNow, routeId, driverId, vehicleId, status, []);
-        var created = await _tripRepository.Create(trip);
-        return created.Id!.Value;
+        trip = await _tripRepository.Create(trip);
+        var driver = await _driverRepository.Fetch(driverId);
+        var vehicle = await _vehicleRepository.Fetch(vehicleId);
+        driver = driver.AssignTrip(trip.Id!.Value);
+        vehicle = vehicle.AssignTrip(trip.Id!.Value);
+        await _driverRepository.Update(driver);
+        await _vehicleRepository.Update(vehicle);
+        return trip.Id!.Value;
+    }
+    
+    private async Task<Guid?> FetchDriverCurrentTripId(Guid driverId)
+    {
+        const string sql = """
+                           SELECT CurrentTripId
+                           FROM Drivers
+                           WHERE Id = @Id
+                           """;
+        var result = await _connection.QuerySingleOrDefaultAsync<string?>(
+            sql,
+            new { Id = driverId.ToString() }
+        );
+        return StringTools.MaybeGuid(result);
+    }
+
+    private async Task<Guid?> FetchVehicleCurrentTripId(Guid vehicleId)
+    {
+        const string sql = """
+                           SELECT CurrentTripId
+                           FROM Vehicles
+                           WHERE Id = @Id
+                           """;
+        var result = await _connection.QuerySingleOrDefaultAsync<string?>(
+            sql,
+            new { Id = vehicleId.ToString() }
+        );
+        return StringTools.MaybeGuid(result);
     }
 
     private async Task<IReadOnlyList<EventType>> FetchEventTypes(Guid tripId)
@@ -111,6 +147,20 @@ public sealed class ProcessEventTests : IDisposable
 
         Assert.Empty(events);
         Assert.Equal(TripStatus.Finished, trip.Status);
+    }
+
+    [Fact]
+    public async Task Execute_ShouldUpdateVehicleAndDriver_WhenTripFinished()
+    {
+        var tripId = await CreateTrip(TripStatus.Planned);
+        var commandStart = new ProcessEventCommand(tripId, EventType.TripStarted, "start");
+        var commandCompleted = new ProcessEventCommand(tripId, EventType.TripCompleted, "completed");
+        
+        await _useCase.Execute(commandStart);
+        await _useCase.Execute(commandCompleted);
+        
+        Assert.Null(await FetchDriverCurrentTripId(tripId));
+        Assert.Null(await FetchVehicleCurrentTripId(tripId));
     }
 
     public void Dispose()

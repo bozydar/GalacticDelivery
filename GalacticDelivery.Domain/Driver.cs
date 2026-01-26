@@ -2,7 +2,11 @@ using System.Data;
 
 namespace GalacticDelivery.Domain;
 
-public record Driver(Guid? Id, string FirstName, string LastName, Guid? CurrentTripId = null);
+public record Driver(Guid? Id, string FirstName, string LastName, Guid? CurrentTripId = null)
+{
+    public Driver AssignTrip(Guid tripId) => this with { CurrentTripId = tripId };
+    public Driver UnassignTrip() => this with { CurrentTripId = null };
+}
 
 public interface IDriverRepository
 {

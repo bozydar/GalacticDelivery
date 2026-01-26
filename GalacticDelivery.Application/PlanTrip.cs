@@ -1,4 +1,5 @@
-﻿using GalacticDelivery.Common;
+﻿using System.Data.Common;
+using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 
 namespace GalacticDelivery.Application;
@@ -60,12 +61,7 @@ public class PlanTrip
             );
 
             trip = await _tripRepository.Create(trip, transaction);
-            await _driverRepository.Update(
-                driver with { CurrentTripId = trip.Id },
-                transaction);
-            await _vehicleRepository.Update(
-                vehicle with { CurrentTripId = trip.Id },
-                transaction);
+            await UpdateDriverAndVehicleTripIds(driver, vehicle, trip, transaction);
 
             await transaction.CommitAsync(cancellationToken);
             return Result<Guid>.Success((Guid)trip.Id!);
@@ -75,5 +71,15 @@ public class PlanTrip
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    private async Task UpdateDriverAndVehicleTripIds(Driver driver, Vehicle vehicle, Trip trip, DbTransaction transaction)
+    {
+        _ = await _driverRepository.Update(
+            driver with { CurrentTripId = trip.Id },
+            transaction);
+        _ = await _vehicleRepository.Update(
+            vehicle with { CurrentTripId = trip.Id },
+            transaction);
     }
 }
