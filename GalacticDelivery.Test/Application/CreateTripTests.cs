@@ -105,7 +105,9 @@ public sealed class PlanTripTests : IDisposable
         var (routeId, driverId, vehicleId) = await CreateTripDependencies();
         var command = new CreateTripCommand(routeId, driverId, vehicleId);
 
-        var tripId = await _planTrip.Execute(command);
+        var result = await _planTrip.Execute(command);
+        // Assert.True(result.IsSuccess);
+        var tripId = result.Value;
 
         var trip = await _tripRepository.Fetch(tripId);
         Assert.Equal(routeId, trip.RouteId);

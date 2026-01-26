@@ -6,9 +6,4 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\GalacticDelivery.Common\GalacticDelivery.Common.csproj" />
-      <ProjectReference Include="..\GalacticDelivery.Domain\GalacticDelivery.Domain.csproj" />
-    </ItemGroup>
-
 </Project>

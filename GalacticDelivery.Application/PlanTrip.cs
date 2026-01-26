@@ -1,4 +1,5 @@
-﻿using GalacticDelivery.Domain;
+﻿using GalacticDelivery.Common;
+using GalacticDelivery.Domain;
 
 namespace GalacticDelivery.Application;
 
@@ -27,7 +28,7 @@ public class PlanTrip
         _transactionManager = transactionManager;
     }
 
-    public async Task<Guid> Execute(
+    public async Task<Result<Guid>> Execute(
         CreateTripCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -37,13 +38,19 @@ public class PlanTrip
             var driver = await _driverRepository.Fetch(command.DriverId);
             if (driver.CurrentTripId is not null)
             {
-                throw new InvalidOperationException($"Driver {command.DriverId} is already assigned to a trip.");
+                await transaction.RollbackAsync(cancellationToken);
+                return Result<Guid>.Failure(new Error(
+                    "driver_already_assigned",
+                    $"Driver {command.DriverId} is already assigned to a trip."));
             }
 
             var vehicle = await _vehicleRepository.Fetch(command.CarId);
             if (vehicle.CurrentTripId is not null)
             {
-                throw new InvalidOperationException($"Vehicle {command.CarId} is already assigned to a trip.");
+                await transaction.RollbackAsync(cancellationToken);
+                return Result<Guid>.Failure(new Error(
+                    "vehicle_already_assigned",
+                    $"Vehicle {command.CarId} is already assigned to a trip."));
             }
 
             var trip = Trip.Plan(
@@ -61,7 +68,7 @@ public class PlanTrip
                 transaction);
 
             await transaction.CommitAsync(cancellationToken);
-            return (Guid)trip.Id!;
+            return Result<Guid>.Success((Guid)trip.Id!);
         }
         catch
         {
