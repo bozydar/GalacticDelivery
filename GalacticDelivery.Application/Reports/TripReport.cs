@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 
@@ -33,11 +34,16 @@ public record TripReportModel(
 public interface ITripReportRepository
 {
     Task<TripReportModel?> Fetch(Guid tripId);
-    Task UpsertReport(TripReportModel report, IDbTransaction? transaction = null);
-    Task AddReportEvent(TripReportEventModel @event, IDbTransaction? transaction = null);
+    Task UpsertReport(TripReportModel report, DbTransaction? transaction = null);
+    Task AddReportEvent(TripReportEventModel @event, DbTransaction? transaction = null);
 }
 
-public sealed class TripReportProjection
+public interface ITripReportProjection
+{
+    Task Apply(Event @event, DbTransaction? transaction = null, CancellationToken cancellationToken = default);
+}
+
+public sealed class TripReportProjection : ITripReportProjection
 {
     private readonly ITripReportRepository _repo;
     private readonly ITripRepository _tripRepo;
@@ -58,13 +64,13 @@ public sealed class TripReportProjection
         _vehicleRepo = vehicleRepo;
     }
 
-    public async Task Apply(Event @event, IDbTransaction? transaction = null)
+    public async Task Apply(Event @event, DbTransaction? transaction = null, CancellationToken cancellationToken = default)
     {
         var report = await _repo.Fetch(@event.TripId);
         if (report is null)
         {
-            var trip = await _tripRepo.Fetch(@event.TripId);
-            var route = await _routeRepo.Fetch(trip.RouteId);
+            var trip = await _tripRepo.Fetch(@event.TripId, transaction);
+            var route = await _routeRepo.Fetch(trip.RouteId, transaction);
             var driver = await _driverRepo.Fetch(trip.DriverId, transaction);
             var vehicle = await _vehicleRepo.Fetch(trip.VehicleId, transaction);
 

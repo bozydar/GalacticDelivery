@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using System.Text.Json;
 using Dapper;
 using GalacticDelivery.Domain;
@@ -14,7 +15,7 @@ public sealed class SqliteRouteRepository : IRouteRepository
     {
         _connection = connection;
     }
-
+    
     public async Task<Route> Create(Route route)
     {
         var id = route.Id ?? Guid.NewGuid();
@@ -35,7 +36,7 @@ public sealed class SqliteRouteRepository : IRouteRepository
         return route with { Id = id };
     }
 
-    public async Task<Route> Fetch(Guid routeId)
+    public async Task<Route> Fetch(Guid routeId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, Origin, Destination, Checkpoints
@@ -45,7 +46,8 @@ public sealed class SqliteRouteRepository : IRouteRepository
 
         var row = await _connection.QuerySingleOrDefaultAsync<RouteRow>(
             sql,
-            new { Id = routeId.ToString() }
+            new { Id = routeId.ToString() },
+            transaction
         );
 
         if (row is null)

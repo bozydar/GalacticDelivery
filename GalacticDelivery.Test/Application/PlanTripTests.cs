@@ -1,3 +1,4 @@
+using System.Data.Common;
 using GalacticDelivery.Application;
 using GalacticDelivery.Common;
 using GalacticDelivery.Db;
@@ -130,10 +131,10 @@ public sealed class PlanTripTests : IDisposable
         var vehicle = await _vehicleRepository.Fetch(vehicleId);
         var vehicleRepository = new Mock<IVehicleRepository>();
         vehicleRepository
-            .Setup(repo => repo.Fetch(vehicleId, It.IsAny<IDbTransaction?>()))
+            .Setup(repo => repo.Fetch(vehicleId, It.IsAny<DbTransaction?>()))
             .ReturnsAsync(vehicle);
         vehicleRepository
-            .Setup(repo => repo.Update(It.IsAny<Vehicle>(), It.IsAny<IDbTransaction?>()))
+            .Setup(repo => repo.Update(It.IsAny<Vehicle>(), It.IsAny<DbTransaction?>()))
             .ThrowsAsync(new SqliteException("vehicle update blocked", 1));
         var createTrip = new PlanTrip(
             _tripRepository,

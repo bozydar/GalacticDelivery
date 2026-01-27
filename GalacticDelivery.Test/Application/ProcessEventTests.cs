@@ -1,4 +1,5 @@
 using GalacticDelivery.Application;
+using GalacticDelivery.Application.Reports;
 using GalacticDelivery.Common;
 using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
@@ -21,6 +22,8 @@ public sealed class ProcessEventTests : IDisposable
     private readonly SqliteDriverRepository _driverRepository;
     private readonly SqliteVehicleRepository _vehicleRepository;
     private readonly SqliteRouteRepository _routeRepository;
+    private readonly SqliteTripReportRepository _tripReportRepository;
+    private readonly TripReportProjection _tripReportProjection;
     private readonly ProcessEvent _useCase;
 
     public ProcessEventTests()
@@ -33,8 +36,20 @@ public sealed class ProcessEventTests : IDisposable
         _driverRepository = new SqliteDriverRepository(_connection);
         _vehicleRepository = new SqliteVehicleRepository(_connection);
         _routeRepository = new SqliteRouteRepository(_connection);
+        _tripReportRepository = new SqliteTripReportRepository(_connection);
+        _tripReportProjection = new TripReportProjection(
+            _tripReportRepository,
+            _tripRepository,
+            _routeRepository,
+            _driverRepository,
+            _vehicleRepository);
         var transactionManager = new SqliteTransactionManager(_connection);
-        _useCase = new ProcessEvent(_tripRepository, transactionManager, _driverRepository, _vehicleRepository);
+        _useCase = new ProcessEvent(
+            _tripRepository,
+            transactionManager,
+            _driverRepository,
+            _vehicleRepository,
+            _tripReportProjection);
     }
 
     private static void InitializeDatabase(SqliteConnection connection)

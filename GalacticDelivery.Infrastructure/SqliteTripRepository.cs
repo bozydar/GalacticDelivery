@@ -57,7 +57,7 @@ public sealed class SqliteTripRepository : ITripRepository
         return trip with { Events = events.ToList()};
     }
 
-    public async Task<Trip> Fetch(Guid tripId)
+    public async Task<Trip> Fetch(Guid tripId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, CreatedAt, RouteId, VehicleId, DriverId, Status
@@ -67,7 +67,8 @@ public sealed class SqliteTripRepository : ITripRepository
 
         var row = await _connection.QuerySingleOrDefaultAsync<TripRow>(
             sql,
-            new { Id = tripId.ToString() }
+            new { Id = tripId.ToString() },
+            transaction
         );
 
         if (row is null)
@@ -95,7 +96,7 @@ public sealed class SqliteTripRepository : ITripRepository
         return savedEvents;
     }
     
-    private async Task<Event> InsertEvent(Event @event, IDbTransaction? transaction)
+    private async Task<Event> InsertEvent(Event @event, DbTransaction? transaction)
     {
         var id = @event.Id ?? Guid.NewGuid();
 

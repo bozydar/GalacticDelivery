@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Data.Common;
 using Dapper;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
@@ -15,7 +16,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         _connection = connection;
     }
 
-    public async Task<Driver> Create(Driver driver, IDbTransaction? transaction)
+    public async Task<Driver> Create(Driver driver, DbTransaction? transaction)
     {
         var id = driver.Id ?? Guid.NewGuid();
 
@@ -35,7 +36,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         return driver with { Id = id };
     }
 
-    public async Task<Driver> Update(Driver driver, IDbTransaction? transaction = null)
+    public async Task<Driver> Update(Driver driver, DbTransaction? transaction = null)
     {
         var id = driver.Id ?? Guid.NewGuid();
 
@@ -55,7 +56,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         return driver;
     }
 
-    public async Task<Driver> Fetch(Guid driverId, IDbTransaction? transaction = null)
+    public async Task<Driver> Fetch(Guid driverId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, FirstName, LastName, CurrentTripId

@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 namespace GalacticDelivery.Domain;
 
@@ -10,8 +11,8 @@ public record Driver(Guid? Id, string FirstName, string LastName, Guid? CurrentT
 
 public interface IDriverRepository
 {
-    public Task<Driver> Create(Driver driver, IDbTransaction? transaction = null);
-    public Task<Driver> Update(Driver driver, IDbTransaction? transaction = null);
-    public Task<Driver> Fetch(Guid driverId, IDbTransaction? transaction = null);
+    public Task<Driver> Create(Driver driver, DbTransaction? transaction = null);
+    public Task<Driver> Update(Driver driver, DbTransaction? transaction = null);
+    public Task<Driver> Fetch(Guid driverId, DbTransaction? transaction = null);
     public Task<IEnumerable<Guid>> FetchAllFree();
 }

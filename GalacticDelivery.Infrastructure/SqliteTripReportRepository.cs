@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using System.Text.Json;
 using Dapper;
 using GalacticDelivery.Application.Reports;
@@ -83,7 +84,7 @@ public sealed class SqliteTripReportRepository : ITripReportRepository
         return (checkpointsPlanned, checkpointsPassed, events);
     }
 
-    public Task UpsertReport(TripReportModel report, IDbTransaction? transaction = null)
+    public Task UpsertReport(TripReportModel report, DbTransaction? transaction = null)
     {
         const string sql = """
                                INSERT INTO TripReports (
@@ -163,7 +164,7 @@ public sealed class SqliteTripReportRepository : ITripReportRepository
         return _connection.ExecuteAsync(sql, parameters, transaction: transaction);
     }
 
-    public Task AddReportEvent(TripReportEventModel @event, IDbTransaction? transaction = null)
+    public Task AddReportEvent(TripReportEventModel @event, DbTransaction? transaction = null)
     {
         const string sql = """
                                INSERT INTO TripReportEvents (Id, TripId, CreatedAt, Type, Payload)

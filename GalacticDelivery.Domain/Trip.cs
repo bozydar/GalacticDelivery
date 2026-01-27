@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Data;
 using System.Data.Common;
 using GalacticDelivery.Common;
 
@@ -89,5 +90,5 @@ public interface ITripRepository
 {
     public Task<Trip> Create(Trip trip, DbTransaction? transaction = null);
     public Task<Trip> Update(Trip trip, DbTransaction? transaction = null);
-    public Task<Trip> Fetch(Guid tripId);
+    public Task<Trip> Fetch(Guid tripId, DbTransaction? transaction = null);
 }

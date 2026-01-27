@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System.Data;
+using System.Data.Common;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 
@@ -33,13 +34,13 @@ public class PlanTrip
         CreateTripCommand command,
         CancellationToken cancellationToken = default)
     {
-        await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
+        using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
         try
         {
             var driver = await _driverRepository.Fetch(command.DriverId);
             if (driver.CurrentTripId is not null)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                transaction.Rollback();
                 return Result<Guid>.Failure(new Error(
                     "driver_already_assigned",
                     $"Driver {command.DriverId} is already assigned to a trip."));

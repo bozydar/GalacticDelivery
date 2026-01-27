@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Data.Common;
 using Dapper;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
@@ -34,7 +35,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         return vehicle with { Id = id };
     }
 
-    public async Task<Vehicle> Update(Vehicle vehicle, IDbTransaction? transaction = null)
+    public async Task<Vehicle> Update(Vehicle vehicle, DbTransaction? transaction = null)
     {
         var id = vehicle.Id ?? Guid.NewGuid();
 
@@ -53,7 +54,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         return vehicle with { Id = id };
     }
 
-    public async Task<Vehicle> Fetch(Guid vehicleId, IDbTransaction? transaction = null)
+    public async Task<Vehicle> Fetch(Guid vehicleId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, RegNumber, CurrentTripId

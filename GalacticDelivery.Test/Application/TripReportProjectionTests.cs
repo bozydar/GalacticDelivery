@@ -78,7 +78,7 @@ public sealed class TripReportProjectionTests : IDisposable
             Type: EventType.TripStarted,
             Payload: null);
 
-        await _projection.Apply(@event);
+        await _projection.Apply(@event, null);
 
         var report = await _reportRepository.Fetch(trip.Id!.Value);
 

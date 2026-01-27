@@ -1,3 +1,6 @@
+using System.Data;
+using System.Data.Common;
+
 namespace GalacticDelivery.Domain;
 
 public record Checkpoint(
@@ -14,6 +17,6 @@ public record Route(
 public interface IRouteRepository
 {
     public Task<Route> Create(Route route);
-    public Task<Route> Fetch(Guid routeId);
+    public Task<Route> Fetch(Guid routeId, DbTransaction? transaction = null);
     public Task<IEnumerable<Route>> FetchAll();
 }

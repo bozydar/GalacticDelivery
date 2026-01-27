@@ -1,6 +1,8 @@
+using System.Data;
 using System.Data.Common;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
+using GalacticDelivery.Application.Reports;
 
 namespace GalacticDelivery.Application;
 
@@ -16,27 +18,46 @@ public class ProcessEvent
     private readonly ITransactionManager _transactionManager;
     private readonly IDriverRepository _driverRepository;
     private readonly IVehicleRepository _vehicleRepository;
+    private readonly ITripReportProjection _tripReportProjection;
 
-    public ProcessEvent(ITripRepository tripRepository, ITransactionManager transactionManager, IDriverRepository driverRepository, IVehicleRepository vehicleRepository)
+    public ProcessEvent(
+        ITripRepository tripRepository,
+        ITransactionManager transactionManager,
+        IDriverRepository driverRepository,
+        IVehicleRepository vehicleRepository,
+        ITripReportProjection tripReportProjection)
     {
         _tripRepository = tripRepository;
         _transactionManager = transactionManager;
         _driverRepository = driverRepository;
         _vehicleRepository = vehicleRepository;
+        _tripReportProjection = tripReportProjection;
     }
 
     public async Task<Result<Guid>> Execute(
-        ProcessEventCommand command, CancellationToken cancellationToken = default)
+        ProcessEventCommand command)
     {
         var @event = ProcessEventCommandToEvent(command);
-        return @event.Type switch
+        await using var transaction = await _transactionManager.BeginTransactionAsync();
+        var result = @event.Type switch
         {
-            EventType.TripCompleted => await TripCompletedEvent(@event, cancellationToken),
-            _ => await RegularEvent(@event)
+            EventType.TripCompleted => await TripCompletedEvent(@event, transaction),
+            _ => await RegularEvent(@event, transaction)
         };
+
+        if (result.IsFailure)
+        {
+            await transaction.RollbackAsync();
+        }
+        else
+        {
+            await transaction.CommitAsync();
+        }
+
+        return result;
     }
 
-    private async Task<Result<Guid>> RegularEvent(Event @event)
+    private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction, CancellationToken cancellationToken = default)
     {
         var trip = await _tripRepository.Fetch(@event.TripId);
         var addResult = trip.AddEvent(@event);
@@ -44,39 +65,32 @@ public class ProcessEvent
         {
             return Result<Guid>.Failure(addResult.Error!);
         }
+
         trip = addResult.Value!;
         trip = await _tripRepository.Update(trip);
-        
+        await _tripReportProjection.Apply(@event, transaction, cancellationToken);
+
         return Result<Guid>.Success((Guid)trip.Id!);
     }
 
     private async Task<Result<Guid>> TripCompletedEvent(
-        Event @event, CancellationToken cancellationToken = default)
+        Event @event, DbTransaction transaction)
     {
-        await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
-        try
+        var trip = await _tripRepository.Fetch(@event.TripId);
+        var addResult = trip.AddEvent(@event);
+        if (addResult.IsFailure)
         {
-            var trip = await _tripRepository.Fetch(@event.TripId);
-            var addResult = trip.AddEvent(@event);
-            if (addResult.IsFailure)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return Result<Guid>.Failure(addResult.Error!);
-            }
-            
-            await UnassignDriverAndVehicle(trip, transaction);
-
-            trip = addResult.Value!;
-            trip = await _tripRepository.Update(trip, transaction);
-
-            await transaction.CommitAsync(cancellationToken);
-            return Result<Guid>.Success((Guid)trip.Id!);
+            await transaction.RollbackAsync();
+            return Result<Guid>.Failure(addResult.Error!);
         }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+
+        await UnassignDriverAndVehicle(trip, transaction);
+
+        trip = addResult.Value!;
+        trip = await _tripRepository.Update(trip, transaction);
+        await _tripReportProjection.Apply(@event, transaction);
+
+        return Result<Guid>.Success((Guid)trip.Id!);
     }
 
     private async Task UnassignDriverAndVehicle(Trip trip, DbTransaction transaction)
@@ -86,7 +100,7 @@ public class ProcessEvent
 
         driver = driver.UnassignTrip();
         vehicle = vehicle.UnassignTrip();
-            
+
         _ = await _driverRepository.Update(driver, transaction);
         _ = await _vehicleRepository.Update(vehicle, transaction);
     }
@@ -94,7 +108,7 @@ public class ProcessEvent
     private Event ProcessEventCommandToEvent(ProcessEventCommand command)
     {
         return new Event(
-            Id : null,
+            Id: null,
             TripId: command.TripId,
             Type: command.Type,
             CreatedAt: DateTime.UtcNow,
