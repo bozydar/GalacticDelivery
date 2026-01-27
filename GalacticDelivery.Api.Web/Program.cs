@@ -58,7 +58,7 @@ using (var scope = app.Services.CreateScope())
 {
     var connection = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
     using var command = connection.CreateCommand();
-    command.CommandText = Schema.V1;
+    command.CommandText = Schema.V1 + Schema.Seed;
     command.ExecuteNonQuery();
 }
 
