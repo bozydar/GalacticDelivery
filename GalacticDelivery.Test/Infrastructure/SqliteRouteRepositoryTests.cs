@@ -101,8 +101,8 @@ public sealed class SqliteRouteRepositoryTests : IDisposable
         var routes = (await _repository.FetchAll()).ToList();
 
         Assert.Equal(2, routes.Count);
-        Assert.Contains(routes, route => route.Id == created1.Id);
-        Assert.Contains(routes, route => route.Id == created2.Id);
+        Assert.Contains(routes, route => route == created1.Id);
+        Assert.Contains(routes, route => route == created2.Id);
     }
 
     public void Dispose()

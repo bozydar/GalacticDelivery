@@ -18,5 +18,5 @@ public interface IRouteRepository
 {
     public Task<Route> Create(Route route);
     public Task<Route> Fetch(Guid routeId, DbTransaction? transaction = null);
-    public Task<IEnumerable<Route>> FetchAll();
+    public Task<IEnumerable<Guid>> FetchAll();
 }

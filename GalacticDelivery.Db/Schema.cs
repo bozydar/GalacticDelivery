@@ -46,7 +46,7 @@ public static class Schema
 
                                  CREATE INDEX IF NOT EXISTS IDX_Events_TripId ON Events(TripId);
 
-                                 CREATE TABLE TripReports (
+                                 CREATE TABLE IF NOT EXISTS TripReports (
                                    TripId TEXT PRIMARY KEY,
                                    GeneratedAt TEXT NOT NULL,
                                    CreatedAt TEXT NOT NULL,
@@ -65,7 +65,7 @@ public static class Schema
                                    IncidentsCount INTEGER NOT NULL
                                  );
                                  
-                                 CREATE TABLE TripReportEvents (
+                                 CREATE TABLE IF NOT EXISTS TripReportEvents (
                                    Id TEXT PRIMARY KEY,
                                    TripId TEXT NOT NULL,
                                    CreatedAt TEXT NOT NULL,

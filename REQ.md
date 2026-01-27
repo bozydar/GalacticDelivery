@@ -1,6 +1,8 @@
 # TODO
+* BUG: Drivers.CurrentTripId is blanked instead of being nullified 
 * Fix cancellation token - this or that way
 * Return null instead of throwing exception
+* Add all the CRUDs
 
 # The Great Galactic Delivery Race
 ## Backend Challenge (C#)

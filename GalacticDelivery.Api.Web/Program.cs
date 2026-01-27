@@ -4,6 +4,7 @@ using GalacticDelivery.Application.Reports;
 using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
 using GalacticDelivery.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,11 +25,17 @@ builder.Services.AddScoped(_ =>
 });
 builder.Services.AddScoped<IDriverRepository, SqliteDriverRepository>();
 builder.Services.AddScoped<IVehicleRepository, SqliteVehicleRepository>();
+builder.Services.AddScoped<IRouteRepository, SqliteRouteRepository>();
 builder.Services.AddScoped<ITripRepository, SqliteTripRepository>();
 builder.Services.AddScoped<ITransactionManager, SqliteTransactionManager>();
+builder.Services.AddScoped<ITripReportRepository, SqliteTripReportRepository>();
+builder.Services.AddScoped<ITripReportProjection, TripReportProjection>();
 builder.Services.AddScoped<FetchFreeDrivers>();
+builder.Services.AddScoped<FetchFreeVehicles>();
+builder.Services.AddScoped<FetchRoutes>();
 builder.Services.AddScoped<GetTripReport>();
 builder.Services.AddScoped<PlanTrip>();
+builder.Services.AddScoped<ProcessEvent>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -55,37 +62,40 @@ using (var scope = app.Services.CreateScope())
     command.ExecuteNonQuery();
 }
 
-app.MapGet("/api/vehicles", () =>
-{
+// app.MapGet("/api/vehicles", () =>
+// {
+//
+// }).WithName("GetVehicles");
+//
+// app.MapGet("/api/drivers", () =>
+// {
+//
+// }).WithName("GetDrivers");
 
-}).WithName("GetVehicles");
-
-app.MapGet("/api/drivers", () =>
-{
-
-}).WithName("GetDrivers");
-
-app.MapGet("/api/drivers/free", async (FetchFreeDrivers useCase) =>
+app.MapGet("/api/drivers/free", async ([FromServices] FetchFreeDrivers fetchFreeDrivers) =>
     {
-        var result = await useCase.Execute();
+        var result = await fetchFreeDrivers.Execute();
         return result.Match(
             onSuccess: Results.Ok,
             onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
     })
     .WithName("GetFreeDrivers");
 
-app.MapGet("/api/vehicles/free", async (FetchFreeDrivers useCase) =>
+app.MapGet("/api/vehicles/free", async ([FromServices] FetchFreeVehicles fetchFreeVehicles) =>
     {
-        var result = await useCase.Execute();
+        var result = await fetchFreeVehicles.Execute();
         return result.Match(
             onSuccess: Results.Ok,
             onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
     })
-    .WithName("GetFreeDrivers");
+    .WithName("GetFreeVehicles");
 
-app.MapGet("/api/routes", () =>
+app.MapGet("/api/routes/all", async ([FromServices] FetchRoutes fetchRoutes) =>
 {
-
+    var result = await fetchRoutes.Execute();
+    return result.Match(
+        onSuccess: Results.Ok,
+        onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
 }).WithName("GetRoutes");
 
 app.MapPost("/api/trip", async (CreateTrip trip, PlanTrip useCase) =>
@@ -115,7 +125,7 @@ app.MapPost("/api/trip", async (CreateTrip trip, PlanTrip useCase) =>
             CarId: trip.VehicleId));
 
         return result.Match(
-            onSuccess: id => Results.Ok(new Trip(id, trip.RouteId)),
+            onSuccess: id => Results.Ok(new Trip(id, trip.RouteId, trip.DriverId, trip.VehicleId)),
             onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
     })
     .WithName("PlanTrip");
@@ -126,9 +136,13 @@ app.MapGet("/api/reports/trips-report/{reportId}", async (Guid reportId, GetTrip
     return report is null ? Results.NotFound() : Results.Ok(report);
 }).WithName("GetTripReport");
 
-app.MapPost("/queue/event", (CreateEvent @event) =>
+app.MapPost("/queue/event", async (CreateEvent @event, [FromServices] ProcessEvent useCase) =>
 {
-
+    var command = new ProcessEventCommand(@event.TripId, @event.Type, @event.Payload);
+    var result = await useCase.Execute(command);
+    return result.Match(
+        onSuccess: Results.Ok,
+        onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
 }).WithName("CreateEvent");
 
 
@@ -139,10 +153,10 @@ record Route(Guid RouteId, string StartPoint, string EndPoint);
 
 record CreateTrip(Guid RouteId, Guid DriverId, Guid VehicleId);
 
-record Trip(Guid TripId, Guid RouteId);
+record Trip(Guid TripId, Guid RouteId, Guid DriverId, Guid VehicleId);
 
 record Vehicle(Guid VehicleId, string RegNumber);
 
 record Driver(Guid DriverId, string FirstName, string LastName);
 
-record CreateEvent(Guid EventId, EventType EventType, string Description);
+record CreateEvent(Guid TripId, EventType Type, string Payload);

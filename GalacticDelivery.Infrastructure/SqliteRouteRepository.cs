@@ -58,18 +58,15 @@ public sealed class SqliteRouteRepository : IRouteRepository
         return row.ToRoute();
     }
 
-    public async Task<IEnumerable<Route>> FetchAll()
+    public async Task<IEnumerable<Guid>> FetchAll()
     {
         const string sql = """
-                               SELECT Id, Origin, Destination, Checkpoints
+                               SELECT Id
                                FROM Routes;
                            """;
 
-        var rows = await _connection.QueryAsync<RouteRow>(
-            sql
-        );
-
-        return rows.Select(row => row.ToRoute());
+        var ids = await _connection.QueryAsync<string>(sql);
+        return ids.Select(Guid.Parse);
     }
 
     private sealed record RouteRow(

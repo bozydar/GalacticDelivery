@@ -34,27 +34,19 @@ public class ProcessEvent
         _tripReportProjection = tripReportProjection;
     }
 
+    
     public async Task<Result<Guid>> Execute(
         ProcessEventCommand command)
     {
         var @event = ProcessEventCommandToEvent(command);
-        await using var transaction = await _transactionManager.BeginTransactionAsync();
-        var result = @event.Type switch
+        return await _transactionManager.WithTransaction(async transaction =>
         {
-            EventType.TripCompleted => await TripCompletedEvent(@event, transaction),
-            _ => await RegularEvent(@event, transaction)
-        };
-
-        if (result.IsFailure)
-        {
-            await transaction.RollbackAsync();
-        }
-        else
-        {
-            await transaction.CommitAsync();
-        }
-
-        return result;
+            return @event.Type switch
+            {
+                EventType.TripCompleted => await TripCompletedEvent(@event, transaction),
+                _ => await RegularEvent(@event, transaction)
+            };
+        });
     }
 
     private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction, CancellationToken cancellationToken = default)
@@ -80,7 +72,6 @@ public class ProcessEvent
         var addResult = trip.AddEvent(@event);
         if (addResult.IsFailure)
         {
-            await transaction.RollbackAsync();
             return Result<Guid>.Failure(addResult.Error!);
         }
 
