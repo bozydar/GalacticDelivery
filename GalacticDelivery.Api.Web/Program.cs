@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using GalacticDelivery.Application;
+using GalacticDelivery.Application.Reports;
 using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
 using GalacticDelivery.Infrastructure;
@@ -11,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-var sqlitePath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "identifier.sqlite"));
 var connectionString = builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=:memory:";
 builder.Services.AddScoped(_ =>
 {
@@ -23,7 +23,12 @@ builder.Services.AddScoped(_ =>
     return connection;
 });
 builder.Services.AddScoped<IDriverRepository, SqliteDriverRepository>();
+builder.Services.AddScoped<IVehicleRepository, SqliteVehicleRepository>();
+builder.Services.AddScoped<ITripRepository, SqliteTripRepository>();
+builder.Services.AddScoped<ITransactionManager, SqliteTransactionManager>();
 builder.Services.AddScoped<FetchFreeDrivers>();
+builder.Services.AddScoped<GetTripReport>();
+builder.Services.AddScoped<PlanTrip>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -52,65 +57,69 @@ using (var scope = app.Services.CreateScope())
 
 app.MapGet("/api/vehicles", () =>
 {
-    List<Vehicle> result =
-    [
-        new(Guid.NewGuid(), "ABC 1111"),
-        new(Guid.NewGuid(), "DEF 222"),
-        new(Guid.NewGuid(), "GHI 333"),
-    ];
-    return result;
+
 }).WithName("GetVehicles");
 
 app.MapGet("/api/drivers", () =>
 {
-    List<Driver> result =
-    [
-        new(Guid.NewGuid(), "Adam", "Adamski"),
-        new(Guid.NewGuid(), "Bob", "Builder"),
-        new(Guid.NewGuid(), "Cecylia", "Cyckowska"),
-    ];
-    return result;
+
 }).WithName("GetDrivers");
 
 app.MapGet("/api/drivers/free", async (FetchFreeDrivers useCase) =>
     {
         var result = await useCase.Execute();
         return result.Match(
-            onSuccess: ids => Results.Ok(ids),
+            onSuccess: Results.Ok,
             onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
     })
     .WithName("GetFreeDrivers");
 
 app.MapGet("/api/routes", () =>
 {
-    List<Route> result =
-    [
-        new(Guid.NewGuid(), "Auckland", "Wellington"),
-        new(Guid.NewGuid(), "Wellington", "Gisborne"),
-        new(Guid.NewGuid(), "Gisborne", "Hamilton"),
-        new(Guid.NewGuid(), "Hamilton", "Napier"),
-    ];
-    return result;
+
 }).WithName("GetRoutes");
 
-app.MapPost("/api/trip", (CreateTrip trip) =>
+app.MapPost("/api/trip", async (CreateTrip trip, PlanTrip useCase) =>
     {
+        var errors = new Dictionary<string, string[]>();
         if (trip.RouteId == Guid.Empty)
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [nameof(CreateTrip.RouteId)] = ["field is required"]
-            }, statusCode: StatusCodes.Status400BadRequest);
+            errors[nameof(CreateTrip.RouteId)] = ["field is required"];
+        }
+        if (trip.DriverId == Guid.Empty)
+        {
+            errors[nameof(CreateTrip.DriverId)] = ["field is required"];
+        }
+        if (trip.VehicleId == Guid.Empty)
+        {
+            errors[nameof(CreateTrip.VehicleId)] = ["field is required"];
         }
 
-        return Results.Ok(new Trip(Guid.NewGuid(), trip.RouteId));
+        if (errors.Count > 0)
+        {
+            return Results.ValidationProblem(errors, statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var result = await useCase.Execute(new CreateTripCommand(
+            RouteId: trip.RouteId,
+            DriverId: trip.DriverId,
+            CarId: trip.VehicleId));
+
+        return result.Match(
+            onSuccess: id => Results.Ok(new Trip(id, trip.RouteId)),
+            onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
     })
-    .WithName("CreateTrip");
+    .WithName("PlanTrip");
+
+app.MapGet("/api/reports/trips-report/{reportId}", async (Guid reportId, GetTripReport useCase) =>
+{
+    var report = await useCase.Execute(reportId);
+    return report is null ? Results.NotFound() : Results.Ok(report);
+}).WithName("GetTripReport");
 
 app.MapPost("/queue/event", (CreateEvent @event) =>
 {
-    Console.WriteLine(@event);
-    return Results.Ok();
+
 }).WithName("CreateEvent");
 
 
@@ -119,7 +128,7 @@ app.Run();
 
 record Route(Guid RouteId, string StartPoint, string EndPoint);
 
-record CreateTrip(Guid RouteId);
+record CreateTrip(Guid RouteId, Guid DriverId, Guid VehicleId);
 
 record Trip(Guid TripId, Guid RouteId);
 

@@ -1,6 +1,4 @@
-using System.Data;
 using System.Data.Common;
-using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 
 namespace GalacticDelivery.Application.Reports;
@@ -166,7 +164,14 @@ public sealed class TripReportProjection : ITripReportProjection
     }
 }
 
-public sealed class GetTripReport(ITripReportRepository repo)
+public sealed class GetTripReport
 {
-    public Task<TripReportModel?> Execute(Guid tripId) => repo.Fetch(tripId);
+    private readonly ITripReportRepository _tripReportRepository;
+
+    public GetTripReport(ITripReportRepository tripReportRepository)
+    {
+        _tripReportRepository = tripReportRepository;
+    }
+
+    public async Task<TripReportModel?> Execute(Guid tripId) => await _tripReportRepository.Fetch(tripId);
 }
