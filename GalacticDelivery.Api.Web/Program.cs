@@ -74,6 +74,15 @@ app.MapGet("/api/drivers/free", async (FetchFreeDrivers useCase) =>
     })
     .WithName("GetFreeDrivers");
 
+app.MapGet("/api/vehicles/free", async (FetchFreeDrivers useCase) =>
+    {
+        var result = await useCase.Execute();
+        return result.Match(
+            onSuccess: Results.Ok,
+            onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
+    })
+    .WithName("GetFreeDrivers");
+
 app.MapGet("/api/routes", () =>
 {
 

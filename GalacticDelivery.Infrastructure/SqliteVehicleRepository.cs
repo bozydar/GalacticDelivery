@@ -76,6 +76,17 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         return new Vehicle(Guid.Parse(row.Id), row.RegNumber, StringTools.MaybeGuid(row.CurrentTripId));
     }
 
+    public async Task<IEnumerable<Guid>> FetchAllFree()
+    {
+        const string sql = """
+                               SELECT Id
+                               FROM Vehicles
+                               WHERE CurrentTripId IS NULL
+                           """;
+        var ids = await _connection.QueryAsync<string>(sql);
+        return ids.Select(Guid.Parse);
+    }
+
     private sealed record VehicleRow(
         string Id,
         string RegNumber,

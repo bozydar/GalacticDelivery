@@ -1,3 +1,7 @@
+# TODO
+* Fix cancellation token - this or that way
+* Return null instead of throwing exception
+
 # The Great Galactic Delivery Race
 ## Backend Challenge (C#)
 
