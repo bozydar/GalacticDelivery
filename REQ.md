@@ -1,10 +1,10 @@
 # TODO
-* BUG: Drivers.CurrentTripId is blanked instead of being nullified 
 * Fix cancellation token - this or that way
 * Return null instead of throwing exception:
   * For repo methods -> exception
   * For use cases -> null
 * Error codes to constants
+* Logs
 * Add all the CRUDs
 * Add README.md
 
