@@ -34,13 +34,13 @@ public class PlanTrip
         CreateTripCommand command,
         CancellationToken cancellationToken = default)
     {
-        using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
         try
         {
             var driver = await _driverRepository.Fetch(command.DriverId);
             if (driver.CurrentTripId is not null)
             {
-                transaction.Rollback();
+                await transaction.RollbackAsync(cancellationToken);
                 return Result<Guid>.Failure(new Error(
                     "driver_already_assigned",
                     $"Driver {command.DriverId} is already assigned to a trip."));

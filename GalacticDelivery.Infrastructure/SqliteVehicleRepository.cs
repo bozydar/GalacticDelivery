@@ -29,7 +29,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         {
             Id = id.ToString(),
             vehicle.RegNumber,
-            vehicle.CurrentTripId
+            CurrentTripId = vehicle.CurrentTripId?.ToString()
         });
 
         return vehicle with { Id = id };
@@ -48,7 +48,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         {
             Id = id.ToString(),
             vehicle.RegNumber,
-            vehicle.CurrentTripId
+            CurrentTripId = vehicle.CurrentTripId?.ToString()
         }, transaction: transaction);
 
         return vehicle with { Id = id };

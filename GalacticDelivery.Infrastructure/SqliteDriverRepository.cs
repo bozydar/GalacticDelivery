@@ -30,7 +30,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
             Id = id.ToString(),
             driver.FirstName,
             driver.LastName,
-            driver.CurrentTripId
+            CurrentTripId = driver.CurrentTripId?.ToString()
         }, transaction: transaction);
 
         return driver with { Id = id };
@@ -50,7 +50,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
             Id = id.ToString(),
             driver.FirstName,
             driver.LastName,
-            CurrentTripId = driver.CurrentTripId.ToString()
+            CurrentTripId = driver.CurrentTripId?.ToString()
         }, transaction: transaction);
 
         return driver;
