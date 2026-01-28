@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 public sealed class ProcessEventTests : IDisposable
@@ -49,7 +50,8 @@ public sealed class ProcessEventTests : IDisposable
             transactionManager,
             _driverRepository,
             _vehicleRepository,
-            _tripReportProjection);
+            _tripReportProjection,
+            NullLogger<ProcessEvent>.Instance);
     }
 
     private static void InitializeDatabase(SqliteConnection connection)

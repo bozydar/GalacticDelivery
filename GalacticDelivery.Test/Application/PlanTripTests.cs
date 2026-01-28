@@ -13,6 +13,7 @@ using System.Data;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -40,7 +41,8 @@ public sealed class PlanTripTests : IDisposable
             _tripRepository,
             _driverRepository,
             _vehicleRepository,
-            transactionManager);
+            transactionManager,
+            NullLogger<PlanTrip>.Instance);
     }
 
     private static void InitializeDatabase(SqliteConnection connection)
@@ -140,7 +142,8 @@ public sealed class PlanTripTests : IDisposable
             _tripRepository,
             _driverRepository,
             vehicleRepository.Object,
-            new SqliteTransactionManager(_connection));
+            new SqliteTransactionManager(_connection),
+            NullLogger<PlanTrip>.Instance);
 
         var command = new CreateTripCommand(routeId, driverId, vehicleId);
 

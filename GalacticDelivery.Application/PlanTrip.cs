@@ -2,6 +2,7 @@
 using System.Data.Common;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
+using Microsoft.Extensions.Logging;
 
 namespace GalacticDelivery.Application;
 
@@ -17,29 +18,37 @@ public class PlanTrip
     private readonly IDriverRepository _driverRepository;
     private readonly IVehicleRepository _vehicleRepository;
     private readonly ITransactionManager _transactionManager;
+    private readonly ILogger<PlanTrip> _logger;
 
     public PlanTrip(
         ITripRepository tripRepository,
         IDriverRepository driverRepository,
         IVehicleRepository vehicleRepository,
-        ITransactionManager transactionManager)
+        ITransactionManager transactionManager,
+        ILogger<PlanTrip> logger)
     {
         _tripRepository = tripRepository;
         _driverRepository = driverRepository;
         _vehicleRepository = vehicleRepository;
         _transactionManager = transactionManager;
+        _logger = logger;
     }
 
     public async Task<Result<Guid>> Execute(
         CreateTripCommand command,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Planning trip RouteId={RouteId} DriverId={DriverId} VehicleId={VehicleId}",
+            command.RouteId, command.DriverId, command.CarId);
+
         await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
         try
         {
             var driver = await _driverRepository.Fetch(command.DriverId);
             if (driver.CurrentTripId is not null)
             {
+                _logger.LogWarning("Driver already assigned. DriverId={DriverId} TripId={TripId}",
+                    command.DriverId, driver.CurrentTripId);
                 await transaction.RollbackAsync(cancellationToken);
                 return Result<Guid>.Failure(new Error(
                     "driver_already_assigned",
@@ -49,6 +58,8 @@ public class PlanTrip
             var vehicle = await _vehicleRepository.Fetch(command.CarId);
             if (vehicle.CurrentTripId is not null)
             {
+                _logger.LogWarning("Vehicle already assigned. VehicleId={VehicleId} TripId={TripId}",
+                    command.CarId, vehicle.CurrentTripId);
                 await transaction.RollbackAsync(cancellationToken);
                 return Result<Guid>.Failure(new Error(
                     "vehicle_already_assigned",
@@ -65,10 +76,13 @@ public class PlanTrip
             await UpdateDriverAndVehicleTripIds(driver, vehicle, trip, transaction);
 
             await transaction.CommitAsync(cancellationToken);
+            _logger.LogInformation("Trip planned TripId={TripId} RouteId={RouteId}", trip.Id, command.RouteId);
             return Result<Guid>.Success((Guid)trip.Id!);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to plan trip RouteId={RouteId} DriverId={DriverId} VehicleId={VehicleId}",
+                command.RouteId, command.DriverId, command.CarId);
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }

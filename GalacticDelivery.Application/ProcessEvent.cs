@@ -3,6 +3,7 @@ using System.Data.Common;
 using GalacticDelivery.Common;
 using GalacticDelivery.Domain;
 using GalacticDelivery.Application.Reports;
+using Microsoft.Extensions.Logging;
 
 namespace GalacticDelivery.Application;
 
@@ -19,42 +20,58 @@ public class ProcessEvent
     private readonly IDriverRepository _driverRepository;
     private readonly IVehicleRepository _vehicleRepository;
     private readonly ITripReportProjection _tripReportProjection;
+    private readonly ILogger<ProcessEvent> _logger;
 
     public ProcessEvent(
         ITripRepository tripRepository,
         ITransactionManager transactionManager,
         IDriverRepository driverRepository,
         IVehicleRepository vehicleRepository,
-        ITripReportProjection tripReportProjection)
+        ITripReportProjection tripReportProjection,
+        ILogger<ProcessEvent> logger)
     {
         _tripRepository = tripRepository;
         _transactionManager = transactionManager;
         _driverRepository = driverRepository;
         _vehicleRepository = vehicleRepository;
         _tripReportProjection = tripReportProjection;
+        _logger = logger;
     }
 
     
     public async Task<Result<Guid>> Execute(
         ProcessEventCommand command)
     {
+        _logger.LogInformation("Processing event TripId={TripId} Type={Type}", command.TripId, command.Type);
         var @event = ProcessEventCommandToEvent(command);
-        return await _transactionManager.WithTransaction(async transaction =>
+        try
         {
-            return @event.Type switch
+            return await _transactionManager.WithTransaction(async transaction =>
             {
-                EventType.TripCompleted => await TripCompletedEvent(@event, transaction),
-                _ => await RegularEvent(@event, transaction)
-            };
-        });
+                return @event.Type switch
+                {
+                    EventType.TripCompleted => await TripCompletedEvent(@event, transaction),
+                    _ => await RegularEvent(@event, transaction)
+                };
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to process event TripId={TripId} Type={Type}", command.TripId,
+                command.Type);
+            throw;
+        }
     }
 
-    private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction, CancellationToken cancellationToken = default)
+    private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction,
+        CancellationToken cancellationToken = default)
     {
         var trip = await _tripRepository.Fetch(@event.TripId, transaction);
         var addResult = trip.AddEvent(@event);
         if (addResult.IsFailure)
         {
+            _logger.LogWarning("Invalid event for trip TripId={TripId} Type={Type} Error={Error}",
+                @event.TripId, @event.Type, addResult.Error?.Code);
             return Result<Guid>.Failure(addResult.Error!);
         }
 
@@ -72,6 +89,8 @@ public class ProcessEvent
         var addResult = trip.AddEvent(@event);
         if (addResult.IsFailure)
         {
+            _logger.LogWarning("Invalid event for trip TripId={TripId} Type={Type} Error={Error}",
+                @event.TripId, @event.Type, addResult.Error?.Code);
             return Result<Guid>.Failure(addResult.Error!);
         }
 
