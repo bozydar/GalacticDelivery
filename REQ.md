@@ -1,9 +1,3 @@
-# TODO
-* Set limit for events in trip
-* Error codes to constants
-* Add all the CRUDs
-* Add README.md
-
 # The Great Galactic Delivery Race
 ## Backend Challenge (C#)
 

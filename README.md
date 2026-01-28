@@ -2,6 +2,8 @@
 
 Backend service for managing drivers, vehicles, routes, trips, and trip events in the Great Galactic Delivery Race domain.
 
+[Project Requirements](README.md)
+
 ## Installation
 
 Prerequisites:
@@ -18,7 +20,7 @@ Steps:
    dotnet run --project GalacticDelivery.Api.Web
    ```
 
-By default the API uses a SQLite database at `identifier.sqlite` (configured in
+By default the API uses a SQLite database at `galactic_delivery.sqlite` (configured in
 `GalacticDelivery.Api.Web/appsettings.json`). Schema creation and seed data are
 applied automatically on startup.
 
@@ -32,7 +34,7 @@ docker compose up --build
 ```
 
 The API will be available at `http://localhost:5114`. The SQLite database is
-stored in `identifier.sqlite` on the host and mounted into the container.
+stored in `galactic_delivery.sqlite` on the host and mounted into the container.
 
 ## Tests
 
