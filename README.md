@@ -2,7 +2,7 @@
 
 Backend service for managing drivers, vehicles, routes, trips, and trip events in the Great Galactic Delivery Race domain.
 
-[Project Requirements](README.md)
+[Project Requirements](REQ.md)
 
 ## Installation
 
