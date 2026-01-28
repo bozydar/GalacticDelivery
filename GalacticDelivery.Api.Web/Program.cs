@@ -62,16 +62,6 @@ using (var scope = app.Services.CreateScope())
     command.ExecuteNonQuery();
 }
 
-// app.MapGet("/api/vehicles", () =>
-// {
-//
-// }).WithName("GetVehicles");
-//
-// app.MapGet("/api/drivers", () =>
-// {
-//
-// }).WithName("GetDrivers");
-
 app.MapGet("/api/drivers/free", async ([FromServices] FetchFreeDrivers fetchFreeDrivers) =>
     {
         var result = await fetchFreeDrivers.Execute();

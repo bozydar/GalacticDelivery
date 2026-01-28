@@ -104,7 +104,9 @@ NBomberRunner
     .Run();
 
 IResponse Fail(string error)
-    => Response.Fail(statusCode: "flow_error", message: error, sizeBytes: 0, customLatencyMs: 0);
+{
+    return Response.Fail(statusCode: "flow_error", message: error, sizeBytes: 0, customLatencyMs: 0);
+}
 
 async Task<(bool Ok, List<Guid> Items, string Error)> GetGuidList(HttpClient client, string url)
 {
