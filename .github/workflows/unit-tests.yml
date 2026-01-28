@@ -27,7 +27,7 @@ jobs:
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Generate Coverage Report
-        run: ~/.dotnet/tools/reportgenerator -reports:GalacticDelivery.Test/TestResults/coverage/coverage.info -targetdir:coverage-report -reporttypes:Html;TextSummary
+        run: ~/.dotnet/tools/reportgenerator -reports:GalacticDelivery.Test/TestResults/coverage/coverage.info -targetdir:coverage-report "-reporttypes:Html;TextSummary"
 
       - name: Coverage Summary
         run: cat coverage-report/Summary.txt >> $GITHUB_STEP_SUMMARY
