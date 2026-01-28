@@ -14,6 +14,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Logging.ClearProviders();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Logging.AddSimpleConsole(options =>
+    {
+        options.SingleLine = true;
+        options.TimestampFormat = "HH:mm:ss ";
+    });
+}
+else
+{
+    builder.Logging.AddJsonConsole();
+}
+
 var connectionString = builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=:memory:";
 builder.Services.AddScoped(_ =>
 {
@@ -52,22 +66,47 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault();
+    if (string.IsNullOrWhiteSpace(correlationId))
+    {
+        correlationId = context.TraceIdentifier;
+    }
+
+    context.Items["CorrelationId"] = correlationId;
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers["X-Correlation-ID"] = correlationId;
+        return Task.CompletedTask;
+    });
+
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    using (logger.BeginScope(new Dictionary<string, object?> { ["CorrelationId"] = correlationId }))
+    {
+        await next();
+    }
+});
+
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
         var exceptionHandler = context.Features.Get<IExceptionHandlerFeature>();
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        var correlationId = context.Items["CorrelationId"] as string
+            ?? context.Request.Headers["X-Correlation-ID"].FirstOrDefault()
+            ?? context.TraceIdentifier;
 
         if (exceptionHandler?.Error is not null)
         {
-            logger.LogError(exceptionHandler.Error, "Unhandled exception for {Method} {Path}", context.Request.Method,
-                context.Request.Path);
+            logger.LogError(exceptionHandler.Error, "Unhandled exception for {Method} {Path} ({CorrelationId})",
+                context.Request.Method, context.Request.Path, correlationId);
         }
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { error = "internal_error" });
+        await context.Response.WriteAsJsonAsync(new { error = "internal_error", correlationId });
     });
 });
 
