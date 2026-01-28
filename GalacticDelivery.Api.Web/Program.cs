@@ -14,79 +14,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Logging.ClearProviders();
-if (builder.Environment.IsDevelopment())
-{
-    builder.Logging.AddSimpleConsole(options =>
-    {
-        options.SingleLine = true;
-        options.TimestampFormat = "HH:mm:ss ";
-    });
-}
-else
-{
-    builder.Logging.AddJsonConsole();
-}
-
-var connectionString = builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=:memory:";
-builder.Services.AddScoped(_ =>
-{
-    var connection = new SqliteConnection(connectionString);
-    connection.Open();
-    using var command = connection.CreateCommand();
-    command.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
-    command.ExecuteNonQuery();
-    return connection;
-});
-builder.Services.AddScoped<IDriverRepository, SqliteDriverRepository>();
-builder.Services.AddScoped<IVehicleRepository, SqliteVehicleRepository>();
-builder.Services.AddScoped<IRouteRepository, SqliteRouteRepository>();
-builder.Services.AddScoped<ITripRepository, SqliteTripRepository>();
-builder.Services.AddScoped<ITransactionManager, SqliteTransactionManager>();
-builder.Services.AddScoped<ITripReportRepository, SqliteTripReportRepository>();
-builder.Services.AddScoped<ITripReportProjection, TripReportProjection>();
-builder.Services.AddScoped<FetchFreeDrivers>();
-builder.Services.AddScoped<FetchFreeVehicles>();
-builder.Services.AddScoped<FetchRoutes>();
-builder.Services.AddScoped<GetTripReport>();
-builder.Services.AddScoped<PlanTrip>();
-builder.Services.AddScoped<ProcessEvent>();
-
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.Converters.Add(
-        new JsonStringEnumConverter()
-    );
-});
+ConfigureLogging(builder);
+ConfigureDatabaseConnection(builder);
+RegisterRepositories(builder);
+ConfigureJsonSerializationOptions(builder);
 
 var app = builder.Build();
+SetupOpenApi(app);
+InitializeDatabaseSchema(app);
+SetCorrelationIdMiddleware(app);
+UseHttpsRedirectionInDevelopment(app);
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.Use(async (context, next) =>
-{
-    var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault();
-    if (string.IsNullOrWhiteSpace(correlationId))
-    {
-        correlationId = context.TraceIdentifier;
-    }
-
-    context.Items["CorrelationId"] = correlationId;
-    context.Response.OnStarting(() =>
-    {
-        context.Response.Headers["X-Correlation-ID"] = correlationId;
-        return Task.CompletedTask;
-    });
-
-    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-    using (logger.BeginScope(new Dictionary<string, object?> { ["CorrelationId"] = correlationId }))
-    {
-        await next();
-    }
-});
 
 app.UseExceptionHandler(errorApp =>
 {
@@ -110,15 +48,6 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-// app.UseHttpsRedirection();
-
-using (var scope = app.Services.CreateScope())
-{
-    var connection = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
-    using var command = connection.CreateCommand();
-    command.CommandText = Schema.V1 + Schema.Seed;
-    command.ExecuteNonQuery();
-}
 
 app.MapGet("/api/drivers/free", async ([FromServices] FetchFreeDrivers fetchFreeDrivers) =>
     {
@@ -195,6 +124,116 @@ app.MapPost("/queue/event", async (CreateEvent @event, [FromServices] ProcessEve
 
 
 app.Run();
+
+void ConfigureLogging(WebApplicationBuilder webApplicationBuilder)
+{
+    webApplicationBuilder.Logging.ClearProviders();
+    if (webApplicationBuilder.Environment.IsDevelopment())
+    {
+        webApplicationBuilder.Logging.AddSimpleConsole(options =>
+        {
+            options.SingleLine = true;
+            options.TimestampFormat = "HH:mm:ss ";
+        });
+    }
+    else
+    {
+        webApplicationBuilder.Logging.AddJsonConsole();
+    }
+}
+
+void ConfigureDatabaseConnection(WebApplicationBuilder builder1)
+{
+    var connectionString = builder1.Configuration.GetConnectionString("Sqlite") ?? "Data Source=:memory:";
+    builder1.Services.AddScoped(_ =>
+    {
+        var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+        command.ExecuteNonQuery();
+        return connection;
+    });
+}
+
+void RegisterRepositories(WebApplicationBuilder webApplicationBuilder1)
+{
+    webApplicationBuilder1.Services.AddScoped<IDriverRepository, SqliteDriverRepository>();
+    webApplicationBuilder1.Services.AddScoped<IVehicleRepository, SqliteVehicleRepository>();
+    webApplicationBuilder1.Services.AddScoped<IRouteRepository, SqliteRouteRepository>();
+    webApplicationBuilder1.Services.AddScoped<ITripRepository, SqliteTripRepository>();
+    webApplicationBuilder1.Services.AddScoped<ITransactionManager, SqliteTransactionManager>();
+    webApplicationBuilder1.Services.AddScoped<ITripReportRepository, SqliteTripReportRepository>();
+    webApplicationBuilder1.Services.AddScoped<ITripReportProjection, TripReportProjection>();
+    webApplicationBuilder1.Services.AddScoped<FetchFreeDrivers>();
+    webApplicationBuilder1.Services.AddScoped<FetchFreeVehicles>();
+    webApplicationBuilder1.Services.AddScoped<FetchRoutes>();
+    webApplicationBuilder1.Services.AddScoped<GetTripReport>();
+    webApplicationBuilder1.Services.AddScoped<PlanTrip>();
+    webApplicationBuilder1.Services.AddScoped<ProcessEvent>();
+}
+
+void ConfigureJsonSerializationOptions(WebApplicationBuilder builder2)
+{
+    builder2.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
+}
+
+void SetupOpenApi(WebApplication webApplication)
+{
+    if (webApplication.Environment.IsDevelopment())
+    {
+        webApplication.MapOpenApi();
+    }
+}
+
+void InitializeDatabaseSchema(WebApplication app1)
+{
+    using (var scope = app1.Services.CreateScope())
+    {
+        var connection = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
+        using var command = connection.CreateCommand();
+        command.CommandText = Schema.V1 + Schema.Seed;
+        command.ExecuteNonQuery();
+    }
+}
+
+void SetCorrelationIdMiddleware(WebApplication webApplication1)
+{
+    webApplication1.Use(async (context, next) =>
+    {
+        var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(correlationId))
+        {
+            correlationId = context.TraceIdentifier;
+        }
+
+        context.Items["CorrelationId"] = correlationId;
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers["X-Correlation-ID"] = correlationId;
+            return Task.CompletedTask;
+        });
+
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        using (logger.BeginScope(new Dictionary<string, object?> { ["CorrelationId"] = correlationId }))
+        {
+            await next();
+        }
+    });
+}
+
+void UseHttpsRedirectionInDevelopment(WebApplication app2)
+{
+    if (!app2.Environment.IsDevelopment())
+    {
+        app2.UseHttpsRedirection();
+    }
+}
 
 
 record Route(Guid RouteId, string StartPoint, string EndPoint);
