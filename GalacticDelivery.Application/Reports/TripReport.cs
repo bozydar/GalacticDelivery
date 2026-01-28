@@ -31,14 +31,14 @@ public record TripReportModel(
 
 public interface ITripReportRepository
 {
-    Task<TripReportModel?> Fetch(Guid tripId);
+    Task<TripReportModel?> Fetch(Guid tripId, CancellationToken cancellationToken = default);
     Task UpsertReport(TripReportModel report, DbTransaction? transaction = null);
     Task AddReportEvent(TripReportEventModel @event, DbTransaction? transaction = null);
 }
 
 public interface ITripReportProjection
 {
-    Task Apply(Event @event, DbTransaction? transaction = null, CancellationToken cancellationToken = default);
+    Task Apply(Event @event, DbTransaction? transaction = null);
 }
 
 public sealed class TripReportProjection : ITripReportProjection
@@ -62,7 +62,7 @@ public sealed class TripReportProjection : ITripReportProjection
         _vehicleRepo = vehicleRepo;
     }
 
-    public async Task Apply(Event @event, DbTransaction? transaction = null, CancellationToken cancellationToken = default)
+    public async Task Apply(Event @event, DbTransaction? transaction = null)
     {
         var report = await _repo.Fetch(@event.TripId);
         if (report is null)
@@ -173,5 +173,8 @@ public sealed class GetTripReport
         _tripReportRepository = tripReportRepository;
     }
 
-    public async Task<TripReportModel?> Execute(Guid tripId) => await _tripReportRepository.Fetch(tripId);
+    public async Task<TripReportModel?> Execute(Guid tripId, CancellationToken cancellationToken = default)
+    {
+        return await _tripReportRepository.Fetch(tripId, cancellationToken);
+    }
 }

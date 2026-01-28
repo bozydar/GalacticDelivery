@@ -38,7 +38,7 @@ public class ProcessEvent
         _logger = logger;
     }
 
-    
+
     public async Task<Result<Guid>> Execute(
         ProcessEventCommand command)
     {
@@ -63,8 +63,7 @@ public class ProcessEvent
         }
     }
 
-    private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction,
-        CancellationToken cancellationToken = default)
+    private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction)
     {
         var trip = await _tripRepository.Fetch(@event.TripId, transaction);
         var addResult = trip.AddEvent(@event);
@@ -77,7 +76,7 @@ public class ProcessEvent
 
         trip = addResult.Value!;
         trip = await _tripRepository.Update(trip, transaction);
-        await _tripReportProjection.Apply(@event, transaction, cancellationToken);
+        await _tripReportProjection.Apply(@event, transaction);
 
         return Result<Guid>.Success((Guid)trip.Id!);
     }

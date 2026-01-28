@@ -16,7 +16,7 @@ public sealed class SqliteTripReportRepository : ITripReportRepository
         _connection = connection;
     }
 
-    public async Task<TripReportModel?> Fetch(Guid tripId)
+    public async Task<TripReportModel?> Fetch(Guid tripId, CancellationToken cancellationToken = default)
     {
         var row = await FetchTripReportRow(tripId);
         if (row is null)
@@ -24,7 +24,8 @@ public sealed class SqliteTripReportRepository : ITripReportRepository
             return null;
         }
 
-        var (checkpointsPlanned, checkpointsPassed, events) = await FetchTripReportEvents(tripId, row);
+        var (checkpointsPlanned, checkpointsPassed, events) =
+            await FetchTripReportEvents(tripId, row, cancellationToken);
         return row.ToModel(checkpointsPlanned, checkpointsPassed, events);
     }
 
@@ -59,7 +60,9 @@ public sealed class SqliteTripReportRepository : ITripReportRepository
         return row;
     }
 
-    private async Task<(List<string> checkpointsPlanned, List<string> checkpointsPassed, List<TripReportEventModel> events)> FetchTripReportEvents(Guid tripId, TripReportRow row)
+    private async
+        Task<(List<string> checkpointsPlanned, List<string> checkpointsPassed, List<TripReportEventModel> events)>
+        FetchTripReportEvents(Guid tripId, TripReportRow row, CancellationToken cancellationToken = default)
     {
         const string eventsSql = """
                                      SELECT
@@ -74,8 +77,11 @@ public sealed class SqliteTripReportRepository : ITripReportRepository
                                  """;
 
         var eventRows = await _connection.QueryAsync<TripReportEventRow>(
-            eventsSql,
-            new { TripId = tripId.ToString() }
+            new CommandDefinition(
+                eventsSql,
+                new { TripId = tripId.ToString() },
+                cancellationToken: cancellationToken
+            )
         );
 
         var checkpointsPlanned = JsonSerializer.Deserialize<List<string>>(row.CheckpointsPlanned) ?? [];

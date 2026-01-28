@@ -6,7 +6,7 @@ namespace GalacticDelivery.Application;
 
 public interface ITransactionManager
 {
-    ValueTask<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    ValueTask<DbTransaction> BeginTransactionAsync();
 }
 
 public static class TransactionManagerExtensions

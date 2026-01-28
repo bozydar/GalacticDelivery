@@ -14,8 +14,8 @@ public sealed class SqliteTransactionManager : ITransactionManager
         _connection = connection;
     }
 
-    public ValueTask<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    public ValueTask<DbTransaction> BeginTransactionAsync()
     {
-        return _connection.BeginTransactionAsync(cancellationToken);
+        return _connection.BeginTransactionAsync();
     }
 }

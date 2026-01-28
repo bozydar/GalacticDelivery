@@ -35,13 +35,12 @@ public class PlanTrip
     }
 
     public async Task<Result<Guid>> Execute(
-        CreateTripCommand command,
-        CancellationToken cancellationToken = default)
+        CreateTripCommand command)
     {
         _logger.LogInformation("Planning trip RouteId={RouteId} DriverId={DriverId} VehicleId={VehicleId}",
             command.RouteId, command.DriverId, command.CarId);
 
-        await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _transactionManager.BeginTransactionAsync();
         try
         {
             var driver = await _driverRepository.Fetch(command.DriverId);
@@ -49,7 +48,7 @@ public class PlanTrip
             {
                 _logger.LogWarning("Driver already assigned. DriverId={DriverId} TripId={TripId}",
                     command.DriverId, driver.CurrentTripId);
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync();
                 return Result<Guid>.Failure(new Error(
                     "driver_already_assigned",
                     $"Driver {command.DriverId} is already assigned to a trip."));
@@ -60,7 +59,7 @@ public class PlanTrip
             {
                 _logger.LogWarning("Vehicle already assigned. VehicleId={VehicleId} TripId={TripId}",
                     command.CarId, vehicle.CurrentTripId);
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync();
                 return Result<Guid>.Failure(new Error(
                     "vehicle_already_assigned",
                     $"Vehicle {command.CarId} is already assigned to a trip."));
@@ -75,7 +74,7 @@ public class PlanTrip
             trip = await _tripRepository.Create(trip, transaction);
             await UpdateDriverAndVehicleTripIds(driver, vehicle, trip, transaction);
 
-            await transaction.CommitAsync(cancellationToken);
+            await transaction.CommitAsync();
             _logger.LogInformation(
                 "Trip planned TripId={TripId} RouteId={RouteId} DriverId={DriverId} VehicleId={VehicleId}", trip.Id,
                 trip.RouteId, trip.DriverId, trip.VehicleId);
@@ -85,7 +84,7 @@ public class PlanTrip
         {
             _logger.LogError(ex, "Failed to plan trip RouteId={RouteId} DriverId={DriverId} VehicleId={VehicleId}",
                 command.RouteId, command.DriverId, command.CarId);
-            await transaction.RollbackAsync(cancellationToken);
+            await transaction.RollbackAsync();
             throw;
         }
     }

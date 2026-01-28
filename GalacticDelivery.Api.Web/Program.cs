@@ -105,9 +105,9 @@ app.MapPost("/api/trip", async (CreateTrip trip, PlanTrip useCase) =>
     })
     .WithName("PlanTrip");
 
-app.MapGet("/api/reports/trips-report/{reportId}", async (Guid reportId, GetTripReport useCase) =>
+app.MapGet("/api/reports/trips-report/{reportId}", async (Guid reportId, GetTripReport useCase, CancellationToken cancellationToken) =>
 {
-    var report = await useCase.Execute(reportId);
+    var report = await useCase.Execute(reportId, cancellationToken);
     return report is null ? Results.NotFound() : Results.Ok(report);
 }).WithName("GetTripReport");
 
@@ -234,8 +234,8 @@ void UseHttpsRedirectionInDevelopment(WebApplication app2)
 }
 
 
-record CreateTrip(Guid RouteId, Guid DriverId, Guid VehicleId);
+internal record CreateTrip(Guid RouteId, Guid DriverId, Guid VehicleId);
 
-record Trip(Guid TripId, Guid RouteId, Guid DriverId, Guid VehicleId);
+internal record Trip(Guid TripId, Guid RouteId, Guid DriverId, Guid VehicleId);
 
-record CreateEvent(Guid TripId, EventType Type, string Payload);
+internal record CreateEvent(Guid TripId, EventType Type, string Payload);
