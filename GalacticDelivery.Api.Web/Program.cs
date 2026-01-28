@@ -10,8 +10,6 @@ using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 ConfigureLogging(builder);
@@ -236,14 +234,8 @@ void UseHttpsRedirectionInDevelopment(WebApplication app2)
 }
 
 
-record Route(Guid RouteId, string StartPoint, string EndPoint);
-
 record CreateTrip(Guid RouteId, Guid DriverId, Guid VehicleId);
 
 record Trip(Guid TripId, Guid RouteId, Guid DriverId, Guid VehicleId);
-
-record Vehicle(Guid VehicleId, string RegNumber);
-
-record Driver(Guid DriverId, string FirstName, string LastName);
 
 record CreateEvent(Guid TripId, EventType Type, string Payload);
