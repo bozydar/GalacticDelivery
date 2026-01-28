@@ -1,6 +1,90 @@
-@GalacticDelivery.Api.Web_HostAddress = http://localhost:5114
+@address = http://localhost:5114
 
-GET {{GalacticDelivery.Api.Web_HostAddress}}/api/drivers/free
+GET {{address}}/api/routes/all
+Accept: application/json
+
+> {% client.global.set("routeId", response.body[0]); %}
+
+###
+
+GET {{address}}/api/drivers/free
+Accept: application/json
+
+> {% client.global.set("driverId", response.body[0]); %}
+
+###
+
+GET {{address}}/api/vehicles/free
+Accept: application/json
+
+> {% client.global.set("vehicleId", response.body[0]); %}
+
+###
+
+POST {{address}}/api/trip
+Accept: application/json
+Content-Type: application/json
+X-Correlation-ID: 1234CORREL-EXAMPLE
+
+{
+  "routeId": "{{routeId}}",
+  "driverId": "{{driverId}}",
+  "vehicleId": "{{vehicleId}}"
+}
+
+> {% client.global.set("tripId", response.body.tripId); %}
+
+###
+
+POST {{address}}/queue/event
+Accept: application/json
+Content-Type: application/json
+
+{
+  "tripId": "{{tripId}}",
+  "type": "TripStarted",
+  "payload": "Started"
+}
+
+###
+
+POST {{address}}/queue/event
+Accept: application/json
+Content-Type: application/json
+
+{
+  "tripId": "{{tripId}}",
+  "type": "CheckpointPassed",
+  "payload": "C1"
+}
+
+###
+
+POST {{address}}/queue/event
+Accept: application/json
+Content-Type: application/json
+
+{
+  "tripId": "{{tripId}}",
+  "type": "Accident",
+  "payload": "Meteor shower"
+}
+
+###
+
+POST {{address}}/queue/event
+Accept: application/json
+Content-Type: application/json
+
+{
+  "tripId": "{{tripId}}",
+  "type": "TripCompleted",
+  "payload": "Stop"
+}
+
+###
+
+GET {{address}}/api/reports/trips-report/{{tripId}}
 Accept: application/json
 
 ###

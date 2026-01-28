@@ -25,6 +25,7 @@ By default the API uses a SQLite database at `galactic_delivery.sqlite` (configu
 applied automatically on startup.
 
 The development profile listens on `http://localhost:5114`.
+An example HTTP scenario is available in `GalacticDelivery.Api.Web/GalacticDelivery.Api.Web.http`.
 
 ## Docker
 

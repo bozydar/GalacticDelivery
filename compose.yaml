@@ -7,6 +7,6 @@ services:
     ports:
       - "5114:8080"
     environment:
-      ConnectionStrings__Sqlite: "Data Source=/data/galactice_delivery.sqlite"
+      ConnectionStrings__Sqlite: "Data Source=/data/galactic_delivery.sqlite"
     volumes:
-      - ./galactice_delivery.sqlite:/data/galactice_delivery.sqlite
+      - ./galactic_delivery.sqlite:/data/galactic_delivery.sqlite
