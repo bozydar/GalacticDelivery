@@ -43,7 +43,8 @@ public sealed class ProcessEventTests : IDisposable
             _tripRepository,
             _routeRepository,
             _driverRepository,
-            _vehicleRepository);
+            _vehicleRepository,
+            NullLogger<TripReportProjection>.Instance);
         var transactionManager = new SqliteTransactionManager(_connection);
         _useCase = new ProcessEvent(
             _tripRepository,
@@ -87,13 +88,13 @@ public sealed class ProcessEventTests : IDisposable
         trip = await _tripRepository.Create(trip);
         var driver = await _driverRepository.Fetch(driverId);
         var vehicle = await _vehicleRepository.Fetch(vehicleId);
-        driver = driver.AssignTrip(trip.Id!.Value);
-        vehicle = vehicle.AssignTrip(trip.Id!.Value);
+        driver = driver!.AssignTrip(trip.Id!.Value);
+        vehicle = vehicle!.AssignTrip(trip.Id!.Value);
         await _driverRepository.Update(driver);
         await _vehicleRepository.Update(vehicle);
         return trip.Id!.Value;
     }
-    
+
     private async Task<Guid?> FetchDriverCurrentTripId(Guid driverId)
     {
         const string sql = """
@@ -147,7 +148,7 @@ public sealed class ProcessEventTests : IDisposable
 
         Assert.Single(events);
         Assert.Equal(EventType.TripStarted, events[0]);
-        Assert.Equal(TripStatus.InProgress, trip.Status);
+        Assert.Equal(TripStatus.InProgress, trip!.Status);
     }
 
     [Fact]
@@ -163,7 +164,7 @@ public sealed class ProcessEventTests : IDisposable
         var trip = await _tripRepository.Fetch(tripId);
 
         Assert.Empty(events);
-        Assert.Equal(TripStatus.Finished, trip.Status);
+        Assert.Equal(TripStatus.Finished, trip!.Status);
     }
 
     [Fact]
@@ -172,10 +173,10 @@ public sealed class ProcessEventTests : IDisposable
         var tripId = await CreateTrip(TripStatus.Planned);
         var commandStart = new ProcessEventCommand(tripId, EventType.TripStarted, "start");
         var commandCompleted = new ProcessEventCommand(tripId, EventType.TripCompleted, "completed");
-        
+
         await _useCase.Execute(commandStart);
         await _useCase.Execute(commandCompleted);
-        
+
         Assert.Null(await FetchDriverCurrentTripId(tripId));
         Assert.Null(await FetchVehicleCurrentTripId(tripId));
     }

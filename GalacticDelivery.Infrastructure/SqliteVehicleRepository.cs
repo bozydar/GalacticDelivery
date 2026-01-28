@@ -54,7 +54,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         return vehicle with { Id = id };
     }
 
-    public async Task<Vehicle> Fetch(Guid vehicleId, DbTransaction? transaction = null)
+    public async Task<Vehicle?> Fetch(Guid vehicleId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, RegNumber, CurrentTripId
@@ -68,12 +68,7 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
             transaction: transaction
         );
 
-        if (row is null)
-        {
-            throw new KeyNotFoundException($"Vehicle {vehicleId} not found");
-        }
-
-        return new Vehicle(Guid.Parse(row.Id), row.RegNumber, StringTools.MaybeGuid(row.CurrentTripId));
+        return row?.ToVehicle();
     }
 
     public async Task<IEnumerable<Guid>> FetchAllFree()
@@ -91,5 +86,11 @@ public sealed class SqliteVehicleRepository : IVehicleRepository
         string Id,
         string RegNumber,
         string CurrentTripId
-    );
+    )
+    {
+        public Vehicle ToVehicle()
+        {
+            return new Vehicle(Guid.Parse(Id), RegNumber, StringTools.MaybeGuid(CurrentTripId));
+        }
+    }
 }

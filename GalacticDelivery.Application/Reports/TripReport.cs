@@ -1,5 +1,6 @@
 using System.Data.Common;
 using GalacticDelivery.Domain;
+using Microsoft.Extensions.Logging;
 
 namespace GalacticDelivery.Application.Reports;
 
@@ -48,18 +49,22 @@ public sealed class TripReportProjection : ITripReportProjection
     private readonly IRouteRepository _routeRepo;
     private readonly IDriverRepository _driverRepo;
     private readonly IVehicleRepository _vehicleRepo;
+    private readonly ILogger<TripReportProjection> _logger;
+
 
     public TripReportProjection(ITripReportRepository repo,
         ITripRepository tripRepo,
         IRouteRepository routeRepo,
         IDriverRepository driverRepo,
-        IVehicleRepository vehicleRepo)
+        IVehicleRepository vehicleRepo,
+        ILogger<TripReportProjection> logger)
     {
         _repo = repo;
         _tripRepo = tripRepo;
         _routeRepo = routeRepo;
         _driverRepo = driverRepo;
         _vehicleRepo = vehicleRepo;
+        _logger = logger;
     }
 
     public async Task Apply(Event @event, DbTransaction? transaction = null)
@@ -68,9 +73,29 @@ public sealed class TripReportProjection : ITripReportProjection
         if (report is null)
         {
             var trip = await _tripRepo.Fetch(@event.TripId, transaction);
+            if (trip is null)
+            {
+                _logger.LogWarning("Trip not found. TripId={TripId}", @event.TripId);
+                return;
+            }
             var route = await _routeRepo.Fetch(trip.RouteId, transaction);
+            if (route is null)
+            {
+                _logger.LogWarning("Route not found. RouteId={RouteId}", trip.RouteId);
+                return;
+            }
             var driver = await _driverRepo.Fetch(trip.DriverId, transaction);
+            if (driver is null)
+            {
+                _logger.LogWarning("Driver not found. DriverId={DriverId}", trip.DriverId);
+                return;
+            }
             var vehicle = await _vehicleRepo.Fetch(trip.VehicleId, transaction);
+            if (vehicle is null)
+            {
+                _logger.LogWarning("Vehicle not found. VehicleId={VehicleId}", trip.VehicleId);
+                return;
+            }
 
             var checkpointsPlanned = route.Checkpoints.Select(c => c.Name).ToList();
 
@@ -109,7 +134,8 @@ public sealed class TripReportProjection : ITripReportProjection
             case EventType.Accident:
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(@event), "Unknown event type");
+                _logger.LogError("Unknown event type {EventType}", @event.Type);
+                break;
         }
 
         var checkpointsPassed = report.CheckpointsPassed.ToList();

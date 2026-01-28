@@ -48,7 +48,7 @@ public sealed class SqliteVehicleRepositoryTests : IDisposable
         var created = await _repository.Create(vehicle);
         var fetched = await _repository.Fetch(created.Id!.Value);
 
-        Assert.Equal(created.Id, fetched.Id);
+        Assert.Equal(created.Id, fetched!.Id);
         Assert.Equal(created.RegNumber, fetched.RegNumber);
         Assert.NotNull(created.CurrentTripId);
     }
@@ -58,7 +58,7 @@ public sealed class SqliteVehicleRepositoryTests : IDisposable
     {
         var nonExistingId = Guid.NewGuid();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(async () => { await _repository.Fetch(nonExistingId); });
+        Assert.Null(await _repository.Fetch(nonExistingId));
     }
 
     [Fact]

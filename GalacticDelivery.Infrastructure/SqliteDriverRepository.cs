@@ -56,7 +56,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
         return driver;
     }
 
-    public async Task<Driver> Fetch(Guid driverId, DbTransaction? transaction = null)
+    public async Task<Driver?> Fetch(Guid driverId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, FirstName, LastName, CurrentTripId
@@ -70,12 +70,7 @@ public sealed class SqliteDriverRepository : IDriverRepository
             transaction: transaction
         );
 
-        if (row is null)
-        {
-            throw new KeyNotFoundException($"Driver {driverId} not found");
-        }
-        
-        return new Driver(Guid.Parse(row.Id), row.FirstName, row.LastName, StringTools.MaybeGuid(row.CurrentTripId));
+        return row?.ToDriver();
     }
 
     public async Task<IEnumerable<Guid>> FetchAllFree()
@@ -94,5 +89,11 @@ public sealed class SqliteDriverRepository : IDriverRepository
         string FirstName,
         string LastName,
         string CurrentTripId
-    );
+    )
+    {
+        public Driver ToDriver()
+        {
+            return new Driver(Guid.Parse(Id), FirstName, LastName, StringTools.MaybeGuid(CurrentTripId));
+        }
+    }
 }

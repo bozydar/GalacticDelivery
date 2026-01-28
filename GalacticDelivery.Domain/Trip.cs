@@ -90,5 +90,5 @@ public interface ITripRepository
 {
     public Task<Trip> Create(Trip trip, DbTransaction? transaction = null);
     public Task<Trip> Update(Trip trip, DbTransaction? transaction = null);
-    public Task<Trip> Fetch(Guid tripId, DbTransaction? transaction = null);
+    public Task<Trip?> Fetch(Guid tripId, DbTransaction? transaction = null);
 }

@@ -1,8 +1,5 @@
 # TODO
 * Set limit for events in trip
-* Return null instead of throwing exception:
-  * For repo methods -> exception
-  * For use cases -> null
 * Error codes to constants
 * Add all the CRUDs
 * Add README.md

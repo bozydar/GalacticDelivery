@@ -43,7 +43,7 @@ public sealed class SqliteTripRepository : ITripRepository
                                UPDATE Trips SET RouteId = @RouteId, VehicleId = @VehicleId, DriverId = @DriverId, Status = @Status
                                WHERE Id = @Id;
                            """;
-        
+
         await _connection.ExecuteAsync(sql, new
         {
             Id = trip.Id.ToString(),
@@ -57,7 +57,7 @@ public sealed class SqliteTripRepository : ITripRepository
         return trip with { Events = events.ToList()};
     }
 
-    public async Task<Trip> Fetch(Guid tripId, DbTransaction? transaction = null)
+    public async Task<Trip?> Fetch(Guid tripId, DbTransaction? transaction = null)
     {
         const string sql = """
                                SELECT Id, CreatedAt, RouteId, VehicleId, DriverId, Status
@@ -71,18 +71,13 @@ public sealed class SqliteTripRepository : ITripRepository
             transaction
         );
 
-        if (row is null)
-        {
-            throw new KeyNotFoundException($"Trip {tripId} not found");
-        }
-
-        return row.ToTrip();
+        return row?.ToTrip();
     }
 
     private async Task<IEnumerable<Event>> SaveEvents(IEnumerable<Event> events, DbTransaction? transaction)
     {
         IList<Event> savedEvents = new List<Event>();
-        foreach (var @event in events)   
+        foreach (var @event in events)
         {
             if (@event.Id is null)
             {
@@ -95,7 +90,7 @@ public sealed class SqliteTripRepository : ITripRepository
         }
         return savedEvents;
     }
-    
+
     private async Task<Event> InsertEvent(Event @event, DbTransaction? transaction)
     {
         var id = @event.Id ?? Guid.NewGuid();
@@ -119,7 +114,7 @@ public sealed class SqliteTripRepository : ITripRepository
             Id = id
         };
     }
-    
+
     private async Task<IEnumerable<Event>> FetchByTripId(Guid tripId)
     {
         const string sql = """
@@ -130,7 +125,7 @@ public sealed class SqliteTripRepository : ITripRepository
         var rows = await _connection.QueryAsync<EventRow>(sql, new { TripId = tripId.ToString() });
         return rows.Select(row => row.ToEvent());
     }
-    
+
     private sealed record EventRow(
         string Id,
         string TripId,

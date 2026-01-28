@@ -11,8 +11,7 @@ public record Driver(Guid? Id, string FirstName, string LastName, Guid? CurrentT
 
 public interface IDriverRepository
 {
-    public Task<Driver> Create(Driver driver, DbTransaction? transaction = null);
     public Task<Driver> Update(Driver driver, DbTransaction? transaction = null);
-    public Task<Driver> Fetch(Guid driverId, DbTransaction? transaction = null);
+    public Task<Driver?> Fetch(Guid driverId, DbTransaction? transaction = null);
     public Task<IEnumerable<Guid>> FetchAllFree();
 }

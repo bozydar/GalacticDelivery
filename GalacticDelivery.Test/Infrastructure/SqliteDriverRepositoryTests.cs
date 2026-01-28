@@ -48,18 +48,18 @@ public sealed class SqliteDriverRepositoryTests : IDisposable
         var created = await _repository.Create(driver, null);
         var fetched = await _repository.Fetch(created.Id!.Value);
 
-        Assert.Equal(created.Id, fetched.Id);
+        Assert.Equal(created.Id, fetched!.Id);
         Assert.Equal(created.FirstName, fetched.FirstName);
         Assert.Equal(created.LastName, fetched.LastName);
         Assert.NotNull(created.CurrentTripId);
     }
 
     [Fact]
-    public async Task Fetch_ShouldThrow_WhenDriverDoesNotExist()
+    public async Task Fetch_ShouldReturnNull_WhenDriverDoesNotExist()
     {
         var nonExistingId = Guid.NewGuid();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(async () => { await _repository.Fetch(nonExistingId); });
+        Assert.Null(await _repository.Fetch(nonExistingId));
     }
 
     [Fact]

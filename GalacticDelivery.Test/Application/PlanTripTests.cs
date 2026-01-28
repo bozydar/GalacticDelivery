@@ -114,7 +114,7 @@ public sealed class PlanTripTests : IDisposable
         var tripId = result.Value;
 
         var trip = await _tripRepository.Fetch(tripId);
-        Assert.Equal(routeId, trip.RouteId);
+        Assert.Equal(routeId, trip!.RouteId);
         Assert.Equal(driverId, trip.DriverId);
         Assert.Equal(vehicleId, trip.VehicleId);
         Assert.Equal(TripStatus.Planned, trip.Status);

@@ -2,6 +2,7 @@ using GalacticDelivery.Application.Reports;
 using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
 using GalacticDelivery.Infrastructure;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GalacticDelivery.Test.Application;
 
@@ -40,7 +41,8 @@ public sealed class TripReportProjectionTests : IDisposable
             _tripRepository,
             _routeRepository,
             _driverRepository,
-            _vehicleRepository);
+            _vehicleRepository,
+            NullLogger<TripReportProjection>.Instance);
     }
 
     private async Task<(Trip trip, Route route, Driver driver, Vehicle vehicle)> CreateTripDependencies()

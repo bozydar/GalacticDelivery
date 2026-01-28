@@ -101,7 +101,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         var created = await _repository.Create(trip);
         var fetched = await _repository.Fetch(created.Id!.Value);
 
-        Assert.Equal(created.Id, fetched.Id);
+        Assert.Equal(created.Id, fetched!.Id);
         Assert.Equal(created.RouteId, fetched.RouteId);
         Assert.Equal(created.DriverId, fetched.DriverId);
         Assert.Equal(created.VehicleId, fetched.VehicleId);
@@ -113,7 +113,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
     {
         var nonExistingId = Guid.NewGuid();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(async () => { await _repository.Fetch(nonExistingId); });
+        Assert.Null(await _repository.Fetch(nonExistingId));
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public sealed class SqliteTripRepositoryTests : IDisposable
         await _repository.Update(updated);
         var fetched = await _repository.Fetch(created.Id!.Value);
 
-        Assert.Equal(updated.Id, fetched.Id);
+        Assert.Equal(updated.Id, fetched!.Id);
         Assert.Equal(updated.RouteId, fetched.RouteId);
         Assert.Equal(updated.DriverId, fetched.DriverId);
         Assert.Equal(updated.VehicleId, fetched.VehicleId);

@@ -61,7 +61,7 @@ public sealed class SqliteRouteRepositoryTests : IDisposable
         var created = await _repository.Create(route);
         var fetched = await _repository.Fetch(created.Id!.Value);
 
-        Assert.Equal(created.Id, fetched.Id);
+        Assert.Equal(created.Id, fetched!.Id);
         Assert.Equal(created.Origin, fetched.Origin);
         Assert.Equal(created.Destination, fetched.Destination);
         Assert.Equal(created.Checkpoints.Count, fetched.Checkpoints.Count);
@@ -69,14 +69,11 @@ public sealed class SqliteRouteRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task Fetch_ShouldThrow_WhenRouteDoesNotExist()
+    public async Task Fetch_ShouldReturnNull_WhenRouteDoesNotExist()
     {
         var nonExistingId = Guid.NewGuid();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
-        {
-            await _repository.Fetch(nonExistingId);
-        });
+        Assert.Null(await _repository.Fetch(nonExistingId));
     }
 
     [Fact]

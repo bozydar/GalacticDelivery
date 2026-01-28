@@ -48,10 +48,16 @@ public class ProcessEvent
         {
             return await _transactionManager.WithTransaction(async transaction =>
             {
+                var trip = await _tripRepository.Fetch(@event.TripId, transaction);
+                if (trip is null)
+                {
+                    _logger.LogWarning("Invalid trip TripId={TripId}", @event.TripId);
+                    return Result<Guid>.Failure(new Error("trip_not_found", $"Trip {@event.TripId} not found."));
+                }
                 return @event.Type switch
                 {
-                    EventType.TripCompleted => await TripCompletedEvent(@event, transaction),
-                    _ => await RegularEvent(@event, transaction)
+                    EventType.TripCompleted => await TripCompletedEvent(@event, trip, transaction),
+                    _ => await RegularEvent(@event, trip, transaction)
                 };
             });
         }
@@ -63,9 +69,8 @@ public class ProcessEvent
         }
     }
 
-    private async Task<Result<Guid>> RegularEvent(Event @event, DbTransaction transaction)
+    private async Task<Result<Guid>> RegularEvent(Event @event, Trip trip, DbTransaction transaction)
     {
-        var trip = await _tripRepository.Fetch(@event.TripId, transaction);
         var addResult = trip.AddEvent(@event);
         if (addResult.IsFailure)
         {
@@ -73,7 +78,6 @@ public class ProcessEvent
                 @event.TripId, @event.Type, addResult.Error?.Code);
             return Result<Guid>.Failure(addResult.Error!);
         }
-
         trip = addResult.Value!;
         trip = await _tripRepository.Update(trip, transaction);
         await _tripReportProjection.Apply(@event, transaction);
@@ -82,9 +86,8 @@ public class ProcessEvent
     }
 
     private async Task<Result<Guid>> TripCompletedEvent(
-        Event @event, DbTransaction transaction)
+        Event @event, Trip trip, DbTransaction transaction)
     {
-        var trip = await _tripRepository.Fetch(@event.TripId);
         var addResult = trip.AddEvent(@event);
         if (addResult.IsFailure)
         {
@@ -105,7 +108,17 @@ public class ProcessEvent
     private async Task UnassignDriverAndVehicle(Trip trip, DbTransaction transaction)
     {
         var driver = await _driverRepository.Fetch(trip.DriverId, transaction);
+        if (driver is null)
+        {
+            _logger.LogWarning("Driver not found. DriverId={DriverId}", trip.DriverId);
+            return;
+        }
         var vehicle = await _vehicleRepository.Fetch(trip.VehicleId, transaction);
+        if (vehicle is null)
+        {
+            _logger.LogWarning("Vehicle not found. VehicleId={VehicleId}", trip.VehicleId);
+            return;
+        }
 
         driver = driver.UnassignTrip();
         vehicle = vehicle.UnassignTrip();

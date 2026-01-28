@@ -44,6 +44,14 @@ public class PlanTrip
         try
         {
             var driver = await _driverRepository.Fetch(command.DriverId);
+            if (driver is null)
+            {
+                _logger.LogWarning("Driver not found. DriverId={DriverId}", command.DriverId);
+                await transaction.RollbackAsync();
+                return Result<Guid>.Failure(new Error(
+                    "driver_not_found",
+                    $"Driver {command.DriverId} not found."));
+            }
             if (driver.CurrentTripId is not null)
             {
                 _logger.LogWarning("Driver already assigned. DriverId={DriverId} TripId={TripId}",
@@ -55,6 +63,14 @@ public class PlanTrip
             }
 
             var vehicle = await _vehicleRepository.Fetch(command.CarId);
+            if (vehicle is null)
+            {
+                _logger.LogWarning("Vehicle not found. VehicleId={VehicleId}", command.CarId);
+                await transaction.RollbackAsync();
+                return Result<Guid>.Failure(new Error(
+                    "vehicle_not_found",
+                    $"Vehicle {command.CarId} not found."));
+            }
             if (vehicle.CurrentTripId is not null)
             {
                 _logger.LogWarning("Vehicle already assigned. VehicleId={VehicleId} TripId={TripId}",
