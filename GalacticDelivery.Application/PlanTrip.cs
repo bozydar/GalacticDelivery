@@ -76,7 +76,9 @@ public class PlanTrip
             await UpdateDriverAndVehicleTripIds(driver, vehicle, trip, transaction);
 
             await transaction.CommitAsync(cancellationToken);
-            _logger.LogInformation("Trip planned TripId={TripId} RouteId={RouteId}", trip.Id, command.RouteId);
+            _logger.LogInformation(
+                "Trip planned TripId={TripId} RouteId={RouteId} DriverId={DriverId} VehicleId={VehicleId}", trip.Id,
+                trip.RouteId, trip.DriverId, trip.VehicleId);
             return Result<Guid>.Success((Guid)trip.Id!);
         }
         catch (Exception ex)
@@ -88,7 +90,8 @@ public class PlanTrip
         }
     }
 
-    private async Task UpdateDriverAndVehicleTripIds(Driver driver, Vehicle vehicle, Trip trip, DbTransaction transaction)
+    private async Task UpdateDriverAndVehicleTripIds(Driver driver, Vehicle vehicle, Trip trip,
+        DbTransaction transaction)
     {
         _ = await _driverRepository.Update(
             driver with { CurrentTripId = trip.Id },

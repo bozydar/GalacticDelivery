@@ -4,7 +4,6 @@
   * For repo methods -> exception
   * For use cases -> null
 * Error codes to constants
-* Logs
 * Add all the CRUDs
 * Add README.md
 
