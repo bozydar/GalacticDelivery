@@ -24,6 +24,16 @@ applied automatically on startup.
 
 The development profile listens on `http://localhost:5114`.
 
+## Docker
+
+Build and run the API with Docker Compose:
+```bash
+docker compose up --build
+```
+
+The API will be available at `http://localhost:5114`. The SQLite database is
+stored in `identifier.sqlite` on the host and mounted into the container.
+
 ## Tests
 
 Unit tests:

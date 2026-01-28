@@ -1,7 +1,12 @@
-﻿services:
+services:
   galacticdelivery.api.web:
     image: galacticdelivery.api.web
     build:
       context: .
       dockerfile: GalacticDelivery.Api.Web/Dockerfile
-
+    ports:
+      - "5114:8080"
+    environment:
+      ConnectionStrings__Sqlite: "Data Source=/data/identifier.sqlite"
+    volumes:
+      - ./identifier.sqlite:/data/identifier.sqlite
