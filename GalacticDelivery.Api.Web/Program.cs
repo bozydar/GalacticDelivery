@@ -4,6 +4,7 @@ using GalacticDelivery.Application.Reports;
 using GalacticDelivery.Db;
 using GalacticDelivery.Domain;
 using GalacticDelivery.Infrastructure;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 
@@ -46,11 +47,29 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionHandler = context.Features.Get<IExceptionHandlerFeature>();
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+        if (exceptionHandler?.Error is not null)
+        {
+            logger.LogError(exceptionHandler.Error, "Unhandled exception for {Method} {Path}", context.Request.Method,
+                context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "internal_error" });
+    });
+});
 
 // app.UseHttpsRedirection();
 
