@@ -23,38 +23,13 @@ InitializeDatabaseSchema(app);
 SetCorrelationIdMiddleware(app);
 UseHttpsRedirectionInDevelopment(app);
 
-
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        var exceptionHandler = context.Features.Get<IExceptionHandlerFeature>();
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        var correlationId = context.Items["CorrelationId"] as string
-            ?? context.Request.Headers["X-Correlation-ID"].FirstOrDefault()
-            ?? context.TraceIdentifier;
-
-        if (exceptionHandler?.Error is not null)
-        {
-            logger.LogError(exceptionHandler.Error, "Unhandled exception for {Method} {Path} ({CorrelationId})",
-                context.Request.Method, context.Request.Path, correlationId);
-        }
-
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { error = "internal_error", correlationId });
-    });
-});
-
-
 app.MapGet("/api/drivers/free", async ([FromServices] FetchFreeDrivers fetchFreeDrivers) =>
-    {
-        var result = await fetchFreeDrivers.Execute();
-        return result.Match(
-            onSuccess: Results.Ok,
-            onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
-    })
-    .WithName("GetFreeDrivers");
+{
+    var result = await fetchFreeDrivers.Execute();
+    return result.Match(
+        onSuccess: Results.Ok,
+        onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
+});
 
 app.MapGet("/api/vehicles/free", async ([FromServices] FetchFreeVehicles fetchFreeVehicles) =>
     {
@@ -62,8 +37,7 @@ app.MapGet("/api/vehicles/free", async ([FromServices] FetchFreeVehicles fetchFr
         return result.Match(
             onSuccess: Results.Ok,
             onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
-    })
-    .WithName("GetFreeVehicles");
+    });
 
 app.MapGet("/api/routes/all", async ([FromServices] FetchRoutes fetchRoutes) =>
 {
@@ -71,7 +45,7 @@ app.MapGet("/api/routes/all", async ([FromServices] FetchRoutes fetchRoutes) =>
     return result.Match(
         onSuccess: Results.Ok,
         onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
-}).WithName("GetRoutes");
+});
 
 app.MapPost("/api/trip", async (CreateTrip trip, PlanTrip useCase) =>
     {
@@ -102,14 +76,13 @@ app.MapPost("/api/trip", async (CreateTrip trip, PlanTrip useCase) =>
         return result.Match(
             onSuccess: id => Results.Ok(new Trip(id, trip.RouteId, trip.DriverId, trip.VehicleId)),
             onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
-    })
-    .WithName("PlanTrip");
+    });
 
 app.MapGet("/api/reports/trips-report/{reportId}", async (Guid reportId, GetTripReport useCase, CancellationToken cancellationToken) =>
 {
     var report = await useCase.Execute(reportId, cancellationToken);
     return report is null ? Results.NotFound() : Results.Ok(report);
-}).WithName("GetTripReport");
+});
 
 app.MapPost("/queue/event", async (CreateEvent @event, [FromServices] ProcessEvent useCase) =>
 {
@@ -118,8 +91,29 @@ app.MapPost("/queue/event", async (CreateEvent @event, [FromServices] ProcessEve
     return result.Match(
         onSuccess: Results.Ok,
         onFailure: error => Results.BadRequest(new { error.Code, error.Message }));
-}).WithName("CreateEvent");
+});
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionHandler = context.Features.Get<IExceptionHandlerFeature>();
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        var correlationId = context.Items["CorrelationId"] as string
+                            ?? context.Request.Headers["X-Correlation-ID"].FirstOrDefault()
+                            ?? context.TraceIdentifier;
+
+        if (exceptionHandler?.Error is not null)
+        {
+            logger.LogError(exceptionHandler.Error, "Unhandled exception for {Method} {Path} ({CorrelationId})",
+                context.Request.Method, context.Request.Path, correlationId);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "internal_error", correlationId });
+    });
+});
 
 app.Run();
 
